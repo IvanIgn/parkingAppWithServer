@@ -1,19 +1,16 @@
-import 'package:cli_server/router_config.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:cli_shared/cli_shared.dart';
 
 class ParkingSpaceRepository {
-  // final String baseUrl = 'http://localhost:8080'; // Serverns URL
+  final String baseUrl = 'http://localhost:8080'; // Serverns URL
 
   // Singleton-instans av ParkingSpaceRepository
+  static final ParkingSpaceRepository _instance =
+      ParkingSpaceRepository._internal();
+  static ParkingSpaceRepository get instance => _instance;
+  ParkingSpaceRepository._internal();
 
-  static final ParkingSpaceRepository instance = ParkingSpaceRepository._();
-
-  ParkingSpaceRepository._();
-
-  final Box<ParkingSpace> parkingSpaceBox =
-      ServerConfig.instance.store.box<ParkingSpace>();
-
-/*
   // Lägga till en ny parkeringsplats via HTTP POST-begäran
   Future<void> addParkingSpace(ParkingSpace parkingSpace) async {
     try {
@@ -116,39 +113,5 @@ class ParkingSpaceRepository {
     } catch (e) {
       print('Fel vid borttagning av parkeringsplats: $e');
     }
-  }
-}
-
-*/
-//////////////////////////////////////////////Future<Person> create(Person person) async {
-  Future<ParkingSpace> createParkingSpace(ParkingSpace parkingSpace) async {
-    parkingSpaceBox.put(parkingSpace, mode: PutMode.insert);
-
-    // above command did not error
-    return parkingSpace;
-  }
-
-  Future<ParkingSpace?> getByParkingSpaceById(int id) async {
-    return parkingSpaceBox.get(id);
-  }
-
-  Future<List<ParkingSpace>> getAllParkingSpaces() async {
-    return parkingSpaceBox.getAll();
-  }
-
-  Future<ParkingSpace> updateParkingSpace(
-      int id, ParkingSpace newParkingSpace) async {
-    parkingSpaceBox.put(newParkingSpace, mode: PutMode.update);
-    return newParkingSpace;
-  }
-
-  Future<ParkingSpace?> deleteParkingSpace(int id) async {
-    ParkingSpace? item = parkingSpaceBox.get(id);
-
-    if (item != null) {
-      parkingSpaceBox.remove(id);
-    }
-
-    return item;
   }
 }

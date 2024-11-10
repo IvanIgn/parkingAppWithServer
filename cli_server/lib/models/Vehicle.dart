@@ -16,7 +16,7 @@ class Vehicle {
   int id; // ObjectBox kräver att ID är ett int
 
   final String registrationNumber; // Registreringsnummer för fordonet
-  final String type; // Typ av fordon (t.ex. bil, motorcykel)
+  late final String type; // Typ av fordon (t.ex. bil, motorcykel)
 
   final String ownerId; // Referens till ägarens ID (Personens personNumber)
 

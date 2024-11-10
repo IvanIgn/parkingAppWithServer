@@ -12,7 +12,7 @@ class Person {
   int id; // ID är ett heltal i ObjectBox
 
   @Index() // Indexera namn för snabbare sökning
-  final String name; // Personens namn
+  late final String name; // Personens namn
 
   final String personNumber; // Personens personnummer
 

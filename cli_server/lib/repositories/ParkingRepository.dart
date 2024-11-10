@@ -1,115 +1,95 @@
-import '../models/Parking.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+//import '../models/Parking.dart' as server_parking;
+//import 'package:objectbox/objectbox.dart';
+//import 'package:cli_server/router_config.dart';
+
+import 'package:cli_server/router_config.dart';
+import 'package:cli_shared/cli_shared.dart';
+//import 'package:cli_shared/cli_shared.dart' as shared;
 
 class ParkingRepository {
-  final String baseUrl = 'http://localhost:8080'; // Serverns URL
+  // Получаем Box<Parking> через конфигурацию сервера
+  //static final Parking _instance =
+  //   Parking._internal();
+  // static Parking get instance => _instance;
+  // Parking._internal();
 
-  // Singleton-instans av ParkingRepository
-  static final ParkingRepository _instance = ParkingRepository._internal();
-  static ParkingRepository get instance => _instance;
-  ParkingRepository._internal();
+  static final ParkingRepository instance = ParkingRepository._();
 
-  // Lägga till en ny parkering via HTTP POST-begäran
-  Future<void> addParking(Parking parking) async {
-    try {
-      final url = Uri.parse('$baseUrl/parkings');
+  ParkingRepository._();
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(parking.toJson()),
-      );
+  Box<Parking> parkingBox = ServerConfig.instance.store.box<Parking>();
 
-      if (response.statusCode == 201) {
-        print('Parkering med ID ${parking.id} tillagd.');
-      } else if (response.statusCode == 400) {
-        print('Ogiltig förfrågan: ${response.body}');
-      } else {
-        print('Fel vid tillägg av parkering: ${response.body}');
-      }
-    } catch (e) {
-      print('Fel vid tillägg av parkering: $e');
-    }
+  // Создает новый объект Parking в базе данных
+/*
+  Future<Parking> addParking(Parking parking) async {
+    parkingBox.put(parking,
+        mode: PutMode.insert); // Вставляем запись, если не существует
+    return parking;
   }
 
-  // Hämta alla parkeringar från servern
+  // Получает объект Parking по ID
+
+  Future<Parking?> getParkingById(int id) async {
+    return parkingBox
+        .get(id); // Возвращает Parking с указанным ID или null, если не найден
+  }
+
+  // Получает все объекты Parking
+
   Future<List<Parking>> getAllParkings() async {
-    try {
-      final url = Uri.parse('$baseUrl/parkings');
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => Parking.fromJson(json)).toList();
-      } else {
-        print('Fel vid hämtning av parkeringar: ${response.body}');
-        return [];
-      }
-    } catch (e) {
-      print('Fel vid hämtning av parkeringar: $e');
-      return [];
-    }
+    return parkingBox.getAll(); // Возвращает список всех записей
   }
 
-  // Hämta en specifik parkering via ID
-  Future<Parking?> getParkingById(String id) async {
-    try {
-      final url = Uri.parse('$baseUrl/parkings/$id');
-      final response = await http.get(url);
+  // Обновляет существующий объект Parking по ID
 
-      if (response.statusCode == 200) {
-        return Parking.fromJson(json.decode(response.body));
-      } else if (response.statusCode == 404) {
-        print('Parkering ej funnet: $id');
-        return null;
-      } else {
-        print('Fel vid hämtning av parkering: ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      print('Fel vid hämtning av parkering: $e');
-      return null;
-    }
+  Future<Parking> updateParking(int id, Parking newParking) async {
+    newParking.id = id; // Устанавливаем ID, чтобы сохранить существующую запись
+    parkingBox.put(newParking, mode: PutMode.update); // Обновляем запись
+    return newParking;
   }
 
-  // Uppdatera en parkering via HTTP PUT-begäran
-  Future<void> updateParking(String id, Parking updatedParking) async {
-    try {
-      final url = Uri.parse('$baseUrl/parkings/$id');
-      final response = await http.put(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(updatedParking.toJson()),
-      );
+  // Удаляет объект Parking по ID и возвращает его, если он существовал
 
-      if (response.statusCode == 200) {
-        print('Parkering med ID $id uppdaterad.');
-      } else if (response.statusCode == 404) {
-        print('Parkering ej funnet: $id');
-      } else {
-        print('Fel vid uppdatering av parkering: ${response.body}');
-      }
-    } catch (e) {
-      print('Fel vid uppdatering av parkering: $e');
+  Future<Parking?> deleteParking(int id) async {
+    Parking? parking = parkingBox.get(id);
+
+    if (parking != null) {
+      parkingBox.remove(id); // Удаляем запись, если она найдена
     }
+
+    return parking; // Возвращаем удаленную запись или null
+  }
+}
+
+*/
+
+  Future<Parking> addParking(Parking parking) async {
+    parkingBox.put(parking, mode: PutMode.insert);
+
+    // above command did not error
+    return parking;
   }
 
-  // Ta bort en parkering via HTTP DELETE-begäran
-  Future<void> deleteParking(String id) async {
-    try {
-      final url = Uri.parse('$baseUrl/parkings/$id');
-      final response = await http.delete(url);
+  Future<Parking?> getByParkingId(int id) async {
+    return parkingBox.get(id);
+  }
 
-      if (response.statusCode == 200) {
-        print('Parkering med ID $id har tagits bort.');
-      } else if (response.statusCode == 404) {
-        print('Parkering ej funnet: $id');
-      } else {
-        print('Fel vid borttagning av parkering: ${response.body}');
-      }
-    } catch (e) {
-      print('Fel vid borttagning av parkering: $e');
+  Future<List<Parking>> getAllParkings() async {
+    return parkingBox.getAll();
+  }
+
+  Future<Parking> updateParking(int id, Parking newParking) async {
+    parkingBox.put(newParking, mode: PutMode.update);
+    return newParking;
+  }
+
+  Future<Parking?> deleteParking(int id) async {
+    Parking? item = parkingBox.get(id);
+
+    if (item != null) {
+      parkingBox.remove(id);
     }
+
+    return item;
   }
 }

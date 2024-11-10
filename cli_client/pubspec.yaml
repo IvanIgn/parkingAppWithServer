@@ -1,6 +1,5 @@
-
-name: cli_server
-description: A server app using the shelf package and Docker.
+name: cli_client
+description: A sample command-line application.
 version: 1.0.0
 # repository: https://github.com/my_org/my_repo
 publish_to: none
@@ -8,15 +7,13 @@ publish_to: none
 environment:
   sdk: ^3.5.3
 
+# Add regular dependencies here.
 dependencies:
-  args: ^2.4.0
-  shelf: ^1.4.0
-  shelf_router: ^1.1.0
+  http: ^1.2.2
+  # path: ^1.8.0
   cli_shared: 
     path: '../cli_shared'
-  objectbox: ^4.0.3
-
+    
 dev_dependencies:
-  http: ^1.1.0
   lints: ^4.0.0
   test: ^1.24.0

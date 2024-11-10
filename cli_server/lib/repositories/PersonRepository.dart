@@ -1,108 +1,84 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../models/Person.dart';
+import 'package:cli_server/router_config.dart';
+import 'package:cli_shared/cli_shared.dart';
 
 class PersonRepository {
-  static final PersonRepository _instance = PersonRepository._internal();
-  static PersonRepository get instance => _instance;
-  PersonRepository._internal();
+  // Инициализируем Box<Person> через конфигурацию сервера
 
-  final String baseUrl = 'http://localhost:8080/person'; // Serverns URL
+  static final PersonRepository instance = PersonRepository._();
+  PersonRepository._();
 
-  // Skapa en ny person på servern
-  Future<void> addPerson(Person person) async {
-    try {
-      final response = await http.post(
-        Uri.parse(baseUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(person.toJson()), // Konvertera Person till JSON
-      );
+  final Box<Person> personBox = ServerConfig.instance.store.box<Person>();
 
-      if (response.statusCode == 201) {
-        print('Person ${person.name} added successfully.');
-      } else if (response.statusCode == 400) {
-        print('Bad request: ${response.body}');
-      } else {
-        print('Failed to add person: ${response.body}');
-      }
-    } catch (e) {
-      print('Error adding person: $e');
-    }
+  // Добавляет объект Person в базу данных
+/*
+  Future<Person> create(Person person) async {
+    personBox.put(person,
+        mode: PutMode.insert); // Вставляем запись, если не существует
+    return person;
   }
 
-  // Hämta alla personer från servern
+  // Возвращает все объекты Person из базы данных
+
+  Future<List<Person>> getAll() async {
+    return personBox.getAll(); // Возвращает список всех записей
+  }
+
+  // Получает объект Person по персональному номеру
+
+  Future<Person?> getByPersonNumber(String personNumber) async {
+    return personBox
+        .query(Person_.personNumber.equals(personNumber)
+            as Condition<Person>?) // Создаем запрос
+        .build()
+        .findFirst(); // Возвращает первую запись, соответствующую условию, или null
+  }
+
+  // Обновляет существующий объект Person
+
+  Future<Person> update(Person person) async {
+    personBox.put(person, mode: PutMode.update); // Обновляем запись
+    return person;
+  }
+
+  // Удаляет объект Person по персональному номеру и возвращает его, если он существовал
+
+  Future<Person?> delete(String personNumber) async {
+    final person = await getByPersonNumber(personNumber);
+    if (person != null) {
+      personBox.remove(person.id); // Удаляем запись, если она найдена
+    }
+    return person; // Возвращаем удаленную запись или null
+  }
+}
+*/
+
+  Future<Person> createPerson(Person person) async {
+    personBox.put(person, mode: PutMode.insert);
+
+    // above command did not error
+    return person;
+  }
+
+  Future<Person?> getByPersonId(int id) async {
+    return personBox.get(id);
+  }
+
   Future<List<Person>> getAllPersons() async {
-    try {
-      final response = await http.get(Uri.parse(baseUrl));
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => Person.fromJson(json)).toList();
-      } else {
-        print('Failed to load persons: ${response.body}');
-        return [];
-      }
-    } catch (e) {
-      print('Error fetching persons: $e');
-      return [];
-    }
+    return personBox.getAll();
   }
 
-  // Hämta en specifik person baserat på personnummer
-  Future<Person?> getPersonByPersonNumber(String personNumber) async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/$personNumber'));
-
-      if (response.statusCode == 200) {
-        return Person.fromJson(json.decode(response.body));
-      } else if (response.statusCode == 404) {
-        print('Person not found: $personNumber');
-        return null;
-      } else {
-        print('Failed to load person: ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      print('Error fetching person: $e');
-      return null;
-    }
+  Future<Person> updatePerson(int id, Person newPerson) async {
+    personBox.put(newPerson, mode: PutMode.update);
+    return newPerson;
   }
 
-  // Uppdatera en persons data på servern
-  Future<void> updatePerson(Person updatedPerson) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/${updatedPerson.personNumber}'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(updatedPerson.toJson()),
-      );
+  Future<Person?> deletePerson(int id) async {
+    Person? item = personBox.get(id);
 
-      if (response.statusCode == 200) {
-        print('Person ${updatedPerson.name} updated successfully.');
-      } else if (response.statusCode == 404) {
-        print('Person not found: ${updatedPerson.personNumber}');
-      } else {
-        print('Failed to update person: ${response.body}');
-      }
-    } catch (e) {
-      print('Error updating person: $e');
+    if (item != null) {
+      personBox.remove(id);
     }
-  }
 
-  // Ta bort en person från servern
-  Future<void> deletePerson(String personNumber) async {
-    try {
-      final response = await http.delete(Uri.parse('$baseUrl/$personNumber'));
-
-      if (response.statusCode == 200) {
-        print('Person with personnummer $personNumber deleted successfully.');
-      } else if (response.statusCode == 404) {
-        print('Person not found: $personNumber');
-      } else {
-        print('Failed to delete person: ${response.body}');
-      }
-    } catch (e) {
-      print('Error deleting person: $e');
-    }
+    return item;
   }
 }

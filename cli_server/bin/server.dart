@@ -1,24 +1,39 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf/shelf.dart';
-import 'package:shelf_router/shelf_router.dart' as shelf_router;
+import 'package:cli_server/router_config.dart';
+import 'package:shelf_router/shelf_router.dart';
 
-//importerade classer
-import 'package:cli_server/models/Person.dart';
-import 'package:cli_server/models/Vehicle.dart';
-import 'package:cli_server/models/Parking.dart';
-import 'package:cli_server/models/ParkingSpace.dart';
+void main(List<String> args) async {
+  final ip = InternetAddress.anyIPv4;
 
-//importerade repositories
-import 'package:cli_server/repositories/PersonRepository.dart';
-import 'package:cli_server/repositories/VehicleRepository.dart';
-import 'package:cli_server/repositories/ParkingRepository.dart';
-import 'package:cli_server/repositories/ParkingSpaceRepository.dart';
+  // Skapa en router
+  Router router = ServerConfig.instance.router;
 
-final ip = InternetAddress.anyIPv4;
-final port = 8080;
+  // Kombinera router med middleware
+  final handler =
+      const Pipeline().addMiddleware(logRequests()).addHandler(router.call);
+  final port = int.parse(Platform.environment['PORT'] ?? '8080');
 
+  // Start the HTTP server after configuring the routes
+  final server = await io.serve(handler, ip, port); // Servern startas här
+  print('Servern körs på http://${server.address.host}:${server.port}');
+
+  // Stäng
+
+  ProcessSignal.sigint.watch().listen((ProcessSignal signal) {
+    print('clean shutdown');
+    server.close(force: true);
+    ServerConfig.instance.store.close();
+    exit(0);
+  });
+  //await server.first;
+}
+
+//final ip = InternetAddress.anyIPv4;
+//final port = 8080;
+
+/*
 const _jsonHeaders = {
   'Content-Type': 'application/json',
 };
@@ -64,7 +79,7 @@ final _router = shelf_router.Router()
   ..delete('/parkings', _deleteParking);
 
 Future<Response> _getAllPersons(Request request) async {
-  final persons = await personRepo.getAllPersons();
+  final persons = personRepo.getAllPersons();
   return Response.ok(
     jsonEncode(persons.map((p) => p.toJson()).toList()),
     headers: _jsonHeaders,
@@ -76,13 +91,13 @@ Future<Response> _createPerson(Request request) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final person = Person.fromJson(data);
-  await personRepo.addPerson(person); // await för asynkron operation
+  personRepo.addPerson(person); // await för asynkron operation
   return Response.ok('Person med ID ${person.personNumber} skapad.');
 }
 
 // GET /persons/<id>
 Future<Response> _getPersonById(Request request, String id) async {
-  final person = await personRepo.getPersonByPersonNumber(id);
+  final person = personRepo.getPersonByPersonNumber(id);
   if (person != null) {
     return Response.ok(jsonEncode(person.toJson()), headers: _jsonHeaders);
   } else {
@@ -95,13 +110,13 @@ Future<Response> _updatePerson(Request request, String id) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final updatedPerson = Person.fromJson(data);
-  await personRepo.updatePerson(updatedPerson); // await för asynkron operation
+  personRepo.updatePerson(updatedPerson); // await för asynkron operation
   return Response.ok('Person med ID $id uppdaterad.');
 }
 
 // DELETE /persons/<id>
 Future<Response> _deletePerson(Request request, String id) async {
-  await personRepo.deletePerson(id); // await för asynkron operation
+  personRepo.deletePerson(id); // await för asynkron operation
   return Response.ok('Person med ID $id har tagits bort.');
 }
 
@@ -109,7 +124,7 @@ Future<Response> _deletePerson(Request request, String id) async {
 // VEHICLE ROUTES
 // GET /vehicles
 Future<Response> _getAllVehicles(Request request) async {
-  final vehicles = await vehicleRepo.getAllVehicles();
+  final vehicles = vehicleRepo.getAllVehicles();
   return Response.ok(
     jsonEncode(vehicles.map((v) => v.toJson()).toList()),
     headers: _jsonHeaders,
@@ -121,7 +136,7 @@ Future<Response> _createVehicle(Request request) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final vehicle = Vehicle.fromJson(data);
-  await vehicleRepo.addVehicle(vehicle); // await för asynkron operation
+  vehicleRepo.addVehicle(vehicle); // await för asynkron operation
   return Response.ok(
       'Fordon med registreringsnummer ${vehicle.registrationNumber} skapad.');
 }
@@ -141,14 +156,13 @@ Future<Response> _updateVehicle(Request request, String id) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final updatedVehicle = Vehicle.fromJson(data);
-  await vehicleRepo.updateVehicle(
-      id, updatedVehicle); // await för asynkron operation
+  vehicleRepo.updateVehicle(id, updatedVehicle); // await för asynkron operation
   return Response.ok('Fordon med ID $id uppdaterad.');
 }
 
 // DELETE /vehicles/<id>
 Future<Response> _deleteVehicle(Request request, String id) async {
-  await vehicleRepo.deleteVehicle(id); // await för asynkron operation
+  vehicleRepo.deleteVehicle(id); // await för asynkron operation
   return Response.ok('Fordon med ID $id har tagits bort.');
 }
 
@@ -156,7 +170,7 @@ Future<Response> _deleteVehicle(Request request, String id) async {
 // PARKING ROUTES
 // GET /parkings
 Future<Response> _getAllParkings(Request request) async {
-  final parkings = await parkingRepo.getAllParkings();
+  final parkings = parkingRepo.getAllParkings();
   return Response.ok(
     jsonEncode(parkings.map((p) => p.toJson()).toList()),
     headers: _jsonHeaders,
@@ -168,13 +182,13 @@ Future<Response> _createParking(Request request) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final parking = Parking.fromJson(data);
-  await parkingRepo.addParking(parking); // await för asynkron operation
+  parkingRepo.addParking(parking); // await för asynkron operation
   return Response.ok('Parkering med ID ${parking.id} skapad.');
 }
 
 // GET /parkingspaces/<id>
 Future<Response> _getParkingById(Request request, String id) async {
-  final parking = await parkingRepo.getParkingById(id);
+  final parking = parkingRepo.getParkingById(id);
   if (parking != null) {
     return Response.ok(jsonEncode(parking.toJson()), headers: _jsonHeaders);
   } else {
@@ -187,13 +201,13 @@ Future<Response> _updateParking(Request request, String id) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final updatedParking = Parking.fromJson(data);
-  await parkingRepo.updateParking(id, updatedParking); // await added
+  parkingRepo.updateParking(id, updatedParking); // await added
   return Response.ok('Parkering med ID $id uppdaterad.');
 }
 
 // DELETE /parkings/<id>
 Future<Response> _deleteParking(Request request, String id) async {
-  await parkingRepo.deleteParking(id); // await added
+  parkingRepo.deleteParking(id); // await added
   return Response.ok('Parkering med ID $id har tagits bort.');
 }
 
@@ -201,7 +215,7 @@ Future<Response> _deleteParking(Request request, String id) async {
 // PARKING SPACE ROUTES
 // GET /parkingspaces
 Future<Response> _getAllParkingSpaces(Request request) async {
-  final parkingSpaces = await parkingSpaceRepo.getAllParkingSpaces();
+  final parkingSpaces = parkingSpaceRepo.getAllParkingSpaces();
   return Response.ok(
     jsonEncode(parkingSpaces.map((p) => p.toJson()).toList()),
     headers: _jsonHeaders,
@@ -213,14 +227,14 @@ Future<Response> _createParkingSpace(Request request) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final parkingSpace = ParkingSpace.fromJson(data);
-  await parkingSpaceRepo
+  parkingSpaceRepo
       .addParkingSpace(parkingSpace); // await för asynkron operation
   return Response.ok('Parkeringsplats med ID ${parkingSpace.id} skapad.');
 }
 
 // GET /parkingspaces/<id>
 Future<Response> _getParkingSpaceById(Request request, String id) async {
-  final parkingSpace = await parkingSpaceRepo.getParkingSpaceById(id);
+  final parkingSpace = parkingSpaceRepo.getParkingSpaceById(id);
   if (parkingSpace != null) {
     return Response.ok(jsonEncode(parkingSpace.toJson()),
         headers: _jsonHeaders);
@@ -234,27 +248,17 @@ Future<Response> _updateParkingSpace(Request request, String id) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final updatedParkingSpace = ParkingSpace.fromJson(data);
-  await parkingSpaceRepo.updateParkingSpace(
+  parkingSpaceRepo.updateParkingSpace(
       id, updatedParkingSpace); // await för asynkron operation
   return Response.ok('Parkeringsplats med ID $id uppdaterad.');
 }
 
 // DELETE /parkingspaces/<id>
 Future<Response> _deleteParkingSpace(Request request, String id) async {
-  await parkingSpaceRepo.deleteParkingSpace(id); // await för asynkron operation
+  parkingSpaceRepo.deleteParkingSpace(id); // await för asynkron operation
   return Response.ok('Parkeringsplats med ID $id har tagits bort.');
 }
 
 //////////////////////////////////
-void main() async {
-  // Kombinera router med middleware
-  final handler =
-      const Pipeline().addMiddleware(logRequests()).addHandler(_router.call);
 
-  // Start the HTTP server after configuring the routes
-  final server = await io.serve(handler, ip, port); // Servern startas här
-  print('Servern körs på http://${server.address.host}:${server.port}');
-
-  // Stäng
-  await server.first;
-}
+*/
