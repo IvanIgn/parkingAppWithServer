@@ -21,7 +21,7 @@ class VehicleRepository {
       );
 
       if (response.statusCode == 201) {
-        print('Fordon ${vehicle.regNr} tillagt.');
+        print('Fordon ${vehicle.regNumber} tillagt.');
       } else if (response.statusCode == 400) {
         print('Ogiltig förfrågan: ${response.body}');
       } else {
@@ -52,8 +52,7 @@ class VehicleRepository {
   }
 
   // Hämta ett specifikt fordon via registreringsnummer
-  Future<Vehicle?> getVehicleByRegistrationNumber(
-      String registrationNumber) async {
+  Future<Vehicle?> getVehicleByRegNumber(String registrationNumber) async {
     try {
       final url = Uri.parse('$baseUrl/vehicles/$registrationNumber');
       final response = await http.get(url);
@@ -85,7 +84,7 @@ class VehicleRepository {
       );
 
       if (response.statusCode == 200) {
-        print('Fordon ${updatedVehicle.regNr} uppdaterad.');
+        print('Fordon ${updatedVehicle.regNumber} uppdaterad.');
       } else if (response.statusCode == 404) {
         print('Fordon ej funnet: $registrationNumber');
       } else {

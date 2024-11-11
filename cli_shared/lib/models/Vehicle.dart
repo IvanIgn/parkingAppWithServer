@@ -1,8 +1,7 @@
 import 'dart:convert';
 
 import 'package:objectbox/objectbox.dart';
-
-import 'person.dart';
+import 'package:cli_shared/models/Person.dart';
 
 @Entity()
 class Vehicle {
@@ -15,8 +14,8 @@ class Vehicle {
 
   @Id()
   int id;
-  final String regNumber;
-  final String vehicleType;
+  String regNumber;
+  String vehicleType;
   @Transient()
   Person? owner;
 

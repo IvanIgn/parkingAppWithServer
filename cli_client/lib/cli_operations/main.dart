@@ -1,13 +1,12 @@
 import 'dart:io';
-
-import 'package:cli_client/cli_operations/vehicles_operations.dart';
 import 'package:cli_client/utils/console.dart';
-import 'persons_operations.dart';
 import 'parkingSpaces_operations.dart';
 import 'parkings_operations.dart';
+import 'persons_operations.dart';
+import 'vehicles_operations.dart';
 
 class SetMainPage {
-  List<String> firstPageTexts = [
+  final List<String> firstPageTexts = [
     'Välkommen till parkeringsappen!\n',
     'Vad vill du hantera?\n',
     '1. Personer\n',
@@ -19,89 +18,58 @@ class SetMainPage {
   ];
 
   void setMainPage({bool clearCLI = false}) {
-    if (clearCLI) {
-      clearConsole();
-    }
-    int pickedMenuOption;
+    if (clearCLI) clearConsole();
     stdout.writeAll(firstPageTexts);
     final input = stdin.readLineSync();
 
     if (input == null || input.isEmpty) {
       print('Du har inte valt något giltigt alternativ');
       return;
-    } else {
-      int option = int.parse(input);
+    }
 
-      switch (option) {
-        case 1:
-          clearConsole();
-          print(PersonOperations().texts);
-          final personInput = stdin.readLineSync();
-          if (personInput == null || personInput.isEmpty) {
-            print('Du har inte valt något giltigt alternativ');
-            return;
-          }
-          pickedMenuOption = int.parse(personInput);
+    final option = int.tryParse(input);
+    if (option == null || option < 1 || option > 5) {
+      print('Ogiltigt val');
+      return;
+    }
 
-          final PersonOperations personLogic = PersonOperations();
-          personLogic.runOperation(pickedMenuOption);
-          break;
-        case 2:
-          clearConsole();
-          stdout.writeAll(VehicleOperations().texts);
-          final vehicleInput = stdin.readLineSync();
-
-          if (vehicleInput == null || vehicleInput.isEmpty) {
-            print('Du har inte valt något giltigt alternativ');
-            return;
-          }
-          pickedMenuOption = int.parse(vehicleInput);
-
-          final VehicleOperations vehicleLogic = VehicleOperations();
-          vehicleLogic.runOperation(pickedMenuOption);
-          break;
-        case 3:
-          clearConsole();
-          stdout.writeAll(ParkingSpaceOperations().texts);
-          final parkingSpaceInput = stdin.readLineSync();
-
-          if (parkingSpaceInput == null || parkingSpaceInput.isEmpty) {
-            print('Du har inte valt något giltigt alternativ');
-            return;
-          }
-          pickedMenuOption = int.parse(parkingSpaceInput);
-
-          final ParkingSpaceOperations vehicleLogic = ParkingSpaceOperations();
-          vehicleLogic.runOperation(pickedMenuOption);
-          break;
-        case 4:
-          clearConsole();
-          stdout.writeAll(ParkingOperations().texts);
-          final parkingInput = stdin.readLineSync();
-
-          if (parkingInput == null || parkingInput.isEmpty) {
-            print('Du har inte valt något giltigt alternativ');
-            return;
-          }
-          pickedMenuOption = int.parse(parkingInput);
-
-          final ParkingOperations vehicleLogic = ParkingOperations();
-          vehicleLogic.runOperation(pickedMenuOption);
-          break;
-        case 5:
-          stdout.write('Du valde att avsluta\n');
-          return;
-        default:
-          print('Ogiltigt val');
-          return;
-      }
-      print('\n---------------------------------\n');
+    switch (option) {
+      case 1:
+        _runSubMenu(PersonsOperations());
+        break;
+      case 2:
+        _runSubMenu(VehiclesOperations());
+        break;
+      case 3:
+        _runSubMenu(ParkingSpaceOperations());
+        break;
+      case 4:
+        _runSubMenu(ParkingsOperations());
+        break;
+      case 5:
+        print('Du valde att avsluta');
+        return;
+      default:
+        print('Ogiltigt val');
     }
   }
 
-  getBackToMainPage(String printText) {
-    print(printText);
-    setMainPage();
-    return;
+  void _runSubMenu(dynamic operation) {
+    clearConsole();
+    stdout.writeAll(operation.menuTexts);
+    final subInput = stdin.readLineSync();
+
+    if (subInput == null || subInput.isEmpty) {
+      print('Du har inte valt något giltigt alternativ');
+      return;
+    }
+
+    final chosenOption = int.tryParse(subInput);
+    if (chosenOption == null || chosenOption < 1 || chosenOption > 5) {
+      print('Ogiltigt val');
+      return;
+    }
+
+    operation.runOperation(chosenOption);
   }
 }

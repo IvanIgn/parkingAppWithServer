@@ -11,7 +11,7 @@ class ParkingSpace {
   @Id()
   int id;
   String address; // Removed 'final' to allow changes
-  final int pricePerHour;
+  int pricePerHour;
 
   // Deserialize method to convert a Map into a ParkingSpace object
   ParkingSpace deserialize(Map<String, dynamic> json) =>

@@ -9,9 +9,9 @@ const _jsonHeaders = {
 };
 
 Future<Response> getAllParkingsHandler(Request request) async {
-  final parkings = await parkingRepo.getAllParkings();
+  final parkings = await parkingRepo.getAll();
   return Response.ok(
-    jsonEncode(parkings.map((p) => p.toJson()).toList()),
+    jsonEncode(parkings?.map((p) => p.toJson()).toList()),
     headers: _jsonHeaders,
   );
 }
@@ -21,7 +21,7 @@ Future<Response> createParkingHandler(Request request) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final parking = Parking.fromJson(data);
-  parkingRepo.addParking(parking); // await för asynkron operation
+  parkingRepo.add(parking); // await för asynkron operation
   return Response.ok('Parkering med ID ${parking.id} skapad.');
 }
 
@@ -31,7 +31,7 @@ Future<Response> getParkingByIdHandler(Request request, String id) async {
   if (parkingId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  final parking = await parkingRepo.getByParkingId(parkingId);
+  final parking = await parkingRepo.getById(parkingId);
   if (parking != null) {
     return Response.ok(jsonEncode(parking.toJson()), headers: _jsonHeaders);
   } else {
@@ -48,7 +48,7 @@ Future<Response> updateParkingHandler(Request request, String id) async {
   if (parkingId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  parkingRepo.updateParking(parkingId, updatedParking); // await added
+  parkingRepo.update(parkingId, updatedParking); // await added
   return Response.ok('Parkering med ID $id uppdaterad.');
 }
 
@@ -58,6 +58,6 @@ Future<Response> deleteParkingHandler(Request request, String id) async {
   if (parkingId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  parkingRepo.deleteParking(parkingId); // await added
+  parkingRepo.delete(parkingId); // await added
   return Response.ok('Parkering med ID $id har tagits bort.');
 }

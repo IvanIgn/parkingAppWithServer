@@ -9,9 +9,9 @@ const _jsonHeaders = {
 };
 
 Future<Response> getAllVehiclesHandler(Request request) async {
-  final vehicles = await vehicleRepo.getAllVehicles();
+  final vehicles = await vehicleRepo.getAll();
   return Response.ok(
-    jsonEncode(vehicles.map((v) => (v).toJson()).toList()),
+    jsonEncode(vehicles?.map((v) => (v).toJson()).toList()),
     headers: _jsonHeaders,
   );
 }
@@ -21,8 +21,9 @@ Future<Response> createVehicleHandler(Request request) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final vehicle = Vehicle.fromJson(data);
-  vehicleRepo.createVehicle(vehicle); // await för asynkron operation
-  return Response.ok('Fordon med registreringsnummer ${vehicle.regNr} skapad.');
+  vehicleRepo.add(vehicle); // await för asynkron operation
+  return Response.ok(
+      'Fordon med registreringsnummer ${vehicle.regNumber} skapad.');
 }
 
 // GET /vehicles/<id>
@@ -31,7 +32,7 @@ Future<Response> getVehicleByIdHandler(Request request, String id) async {
   if (vehicleId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  final vehicle = await vehicleRepo.getByVehicleById(vehicleId);
+  final vehicle = await vehicleRepo.getById(vehicleId);
   if (vehicle != null) {
     return Response.ok(jsonEncode(vehicle.toJson()), headers: _jsonHeaders);
   } else {
@@ -48,8 +49,7 @@ Future<Response> updateVehicleHandler(Request request, String id) async {
   if (vehicleId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  vehicleRepo.updateVehicle(
-      vehicleId, updatedVehicle); // await för asynkron operation
+  vehicleRepo.update(vehicleId, updatedVehicle); // await för asynkron operation
   return Response.ok('Fordon med ID $id uppdaterad.');
 }
 
@@ -59,6 +59,6 @@ Future<Response> deleteVehicleHandler(Request request, String id) async {
   if (vehicleId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  vehicleRepo.deleteVehicle(vehicleId); // await för asynkron operation
+  vehicleRepo.delete(vehicleId); // await för asynkron operation
   return Response.ok('Fordon med ID $id har tagits bort.');
 }

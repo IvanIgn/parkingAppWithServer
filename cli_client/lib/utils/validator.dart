@@ -20,12 +20,12 @@ class Validator {
     return index >= 1 && index < list.length + 1;
   }
 
-  static bool isValidSocialSecurityNumber(String ssn) {
+  static bool isValidSocialSecurityNumber(String input) {
     // Проверяем, что строка состоит ровно из 12 цифр
     final RegExp ssnPattern = RegExp(r'^\d{12}$');
 
     // Возвращаем результат проверки по регулярному выражению
-    return ssnPattern.hasMatch(ssn);
+    return ssnPattern.hasMatch(input);
   }
 
   static bool isValidRegistrationNumber(String value) {
@@ -34,5 +34,11 @@ class Validator {
     final regExp = RegExp(r'^[A-Z]{3}\d{3}$');
 
     return regExp.hasMatch(value);
+  }
+
+  static bool validateNumber(String input) {
+    final number = int.tryParse(input);
+
+    return number != null;
   }
 }

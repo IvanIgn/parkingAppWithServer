@@ -1,9 +1,12 @@
-/*
-class PersonOperations extends SetMainPage {
+import 'dart:io';
+import 'package:cli_client/cli_operations/main.dart';
+import 'package:cli_client/repositories/PersonRepository.dart';
+import 'package:cli_shared/models/Person.dart';
+
+class PersonsOperations extends SetMainPage {
   final PersonRepository personRepository = PersonRepository.instance;
 
-  // Simplified main menu texts to a single constant
-  List<String> texts = [
+  List<String> menuTexts = [
     'Du har valt att hantera Personer. Vad vill du göra?\n',
     '1. Skapa ny person\n',
     '2. Visa alla personer\n',
@@ -22,167 +25,7 @@ class PersonOperations extends SetMainPage {
         _showAllPersonsOperation();
         break;
       case 3:
-        _updatePersonsOperation();
-        break;
-      case 4:
-        _addPersonOperation();
-        break;
-      case 5:
-        setMainPage(clearCLI: true);
-        break;
-      default:
-        _showInvalidChoice();
-    }
-  }
-
-  void _addPersonOperation() async {
-    final name = _getValidatedInput('Fyll i namn: ', 'Namn är obligatoriskt.');
-    final socialSecurityNr = _getValidatedSSN();
-
-    if (name != null && socialSecurityNr != null) {
-      final response = await personRepository
-          .addPerson(Person(name: name, personNumber: socialSecurityNr));
-      _handleRepositoryResponse(response, 'Person tillagd.', 'Något gick fel.');
-      return;
-    }
-  }
-
-  void _showAllPersonsOperation() async {
-    final personList = await personRepository.getAllPersons();
-    if (personList.isEmpty) {
-      print('Inga personer att visa. Testa att lägga till personer.');
-    } else {
-      personList.forEach((person) => print(
-          'Id: ${person.id}, Namn: ${person.name}, Personnummer: ${person.personNumber}'));
-    }
-    _returnToMainMenu();
-  }
-
-  void _updatePersonsOperation() async {
-    print('\nDu har valt att uppdatera en person');
-    final socialSecurityNr = _getValidatedSSN();
-    if (socialSecurityNr == null) return;
-
-    final person = await _findPersonBySSN(socialSecurityNr);
-    if (person == null) return;
-
-    final updatedName = _getValidatedInput(
-        'Ange nytt namn eller tryck Enter för att behålla: ');
-    if (updatedName != null && updatedName.isNotEmpty) {
-      final response = await personRepository.updatePerson(Person(
-        id: person.id,
-        name: updatedName,
-        personNumber: socialSecurityNr,
-      ));
-      _handleRepositoryResponse(
-          response, 'Person uppdaterad.', 'Något gick fel.');
-    } else {
-      print('Ingen ändring gjord.');
-      setMainPage();
-    }
-  }
-
-  void _deletePersonOperation() async {
-    print('\nDu har valt att ta bort en person');
-    final socialSecurityNr = _getValidatedSSN();
-    if (socialSecurityNr == null) return;
-
-    final person = await _findPersonBySSN(socialSecurityNr);
-    if (person == null) return;
-
-    final response = await personRepository.deletePerson(person.id.toString());
-    _handleRepositoryResponse(response, 'Person raderad.', 'Något gick fel.');
-  }
-
-  // Helper Methods
-  String? _getValidatedInput(String prompt, [String? errorMessage]) {
-    stdout.write(prompt);
-    var input = stdin.readLineSync()?.trim();
-    if ((input == null || input.isEmpty) && errorMessage != null) {
-      print(errorMessage);
-      return null;
-    }
-    return input;
-  }
-
-  String? _getValidatedSSN() {
-    final ssn = _getValidatedInput(
-        'Fyll i personnummer (12 siffror utan bindestreck): ',
-        'Personnummer är obligatoriskt.');
-    if (ssn != null && Validator.isValidSocialSecurityNumber(ssn)) return ssn;
-    print('Ogiltigt personnummer. Försök igen.');
-    return null;
-  }
-
-  Future<Person?> _findPersonBySSN(String ssn) async {
-    final personList = await personRepository.getAllPersons();
-    final person =
-        personList.firstWhere((p) => p.personNumber == ssn, orElse: () => null);
-    if (person == null) {
-      print('Ingen person hittades med det angivna personnumret.');
-      setMainPage();
-    }
-    return person;
-  }
-
-  void _handleRepositoryResponse(
-      HttpResponse response, String successMsg, String errorMsg) {
-    print(response.statusCode == 200 ? successMsg : errorMsg);
-    setMainPage();
-  }
-
-  void _returnToMainMenu() {
-    print('Tryck på Enter för att återgå till huvudmenyn.');
-    stdin.readLineSync();
-    setMainPage(clearCLI: true);
-  }
-
-  void _showInvalidChoice() {
-    print('Ogiltigt val. Vänligen välj ett alternativ mellan 1 och 5.');
-    setMainPage();
-  }
-}
-*/
-
-import 'dart:io';
-import 'package:cli_shared/cli_shared.dart';
-import 'package:cli_client/utils/console.dart';
-import 'package:cli_client/utils/validator.dart';
-import 'main.dart';
-//import 'Person.dart'; // Importera Person-klass (din Entity)
-
-class PersonOperations extends SetMainPage {
-  // ObjectBox Store och Box
-  final Store _store = Store(getObjectBoxModel());
-  late final Box<Person> personBox;
-
-  PersonOperations() {
-    // Initiera Box för Person
-    personBox = _store.box<Person>();
-  }
-
-  // Menytexter för hantering av personer
-  List<String> texts = [
-    'Du har valt att hantera Personer. Vad vill du göra?\n',
-    '1. Skapa ny person\n',
-    '2. Visa alla personer\n',
-    '3. Uppdatera person\n',
-    '4. Ta bort person\n',
-    '5. Gå tillbaka till huvudmenyn\n\n',
-    'Välj ett alternativ (1-5): ',
-  ];
-
-  // Hantera användarens val för personoperationer
-  void runOperation(int chosenOption) {
-    switch (chosenOption) {
-      case 1:
-        _addPersonOperation();
-        break;
-      case 2:
-        _showAllPersonsOperation();
-        break;
-      case 3:
-        _updatePersonsOperation();
+        _updatePersonOperation();
         break;
       case 4:
         _deletePersonOperation();
@@ -191,96 +34,80 @@ class PersonOperations extends SetMainPage {
         setMainPage(clearCLI: true);
         break;
       default:
-        _showInvalidChoice();
+        print('Ogiltigt val, vänligen försök igen.');
     }
   }
 
-  // Skapa en ny person
-  void _addPersonOperation() {
-    print('Ange personnummer:');
-    String personNumber = stdin.readLineSync() ?? '';
+  // Add new person
+  Future<void> _addPersonOperation() async {
+    print('\n--- Skapa ny person ---');
+    final name = _promptInput('Fyll i namn:');
+    final ssn = _promptInput('Fyll i personnummer (12 siffror):');
 
-    print('Ange namn:');
-    String name = stdin.readLineSync() ?? '';
-
-    // Skapa en ny Person-instans
-    Person newPerson = Person(personNumber: personNumber, name: name);
-
-    // Spara personen till ObjectBox
-    personBox.put(newPerson);
-
-    print('Person ${newPerson.name} har skapats och sparats lokalt.');
+    if (name != null && ssn != null) {
+      final person = Person(name: name, personNumber: ssn);
+      await personRepository.addPerson(person);
+      print('Personen "${person.name}" har lagts till.');
+    } else {
+      printError('Ogiltig inmatning för att skapa person.');
+    }
+    setMainPage();
   }
 
-  // Visa alla personer
-  void _showAllPersonsOperation() {
-    // Hämta alla personer från Box
-    List<Person> allPersons = personBox.getAll();
-
-    if (allPersons.isEmpty) {
-      print('Inga personer finns i systemet.');
+  // Show all persons
+  Future<void> _showAllPersonsOperation() async {
+    print('\n--- Alla personer ---');
+    final persons = await personRepository.getAllPersons();
+    if (persons.isEmpty) {
+      print('Inga personer hittades.');
     } else {
-      print('Alla personer:');
-      for (var person in allPersons) {
+      for (var person in persons) {
         print(
-            'ID: ${person.id}, Personnummer: ${person.personNumber}, Namn: ${person.name}');
+            'ID: ${person.id}, Namn: ${person.name}, Personnummer: ${person.personNumber}');
       }
     }
+    setMainPage();
   }
 
-  // Uppdatera en befintlig person
-  void _updatePersonsOperation() {
-    print('Ange ID för den person du vill uppdatera:');
-    int? personId = int.tryParse(stdin.readLineSync() ?? '');
+  // Update a person
+  Future<void> _updatePersonOperation() async {
+    print('\n--- Uppdatera person ---');
+    final ssn =
+        _promptInput('Fyll i personnummer för personen du vill uppdatera:');
+    if (ssn == null) return;
 
-    if (personId == null || personId == 0) {
-      print('Ogiltigt ID.');
-      return;
-    }
-
-    // Hämta personen baserat på ID
-    Person? existingPerson = personBox.get(personId);
-
-    if (existingPerson == null) {
-      print('Person med ID $personId finns inte.');
+    final person = await personRepository.getPersonByPersonNumber(ssn);
+    if (person != null) {
+      final newName =
+          _promptInput('Nytt namn (lämna tomt för att behålla aktuellt namn):');
+      if (newName != null && newName.isNotEmpty) person.name = newName;
+      await personRepository.updatePerson(person);
+      print('Personen "${person.name}" har uppdaterats.');
     } else {
-      print('Ange nytt namn (nuvarande: ${existingPerson.name}):');
-      String newName = stdin.readLineSync() ?? existingPerson.name;
-
-      // Uppdatera namn
-      existingPerson.name = newName;
-
-      // Spara den uppdaterade personen till ObjectBox
-      personBox.put(existingPerson);
-
-      print('Person med ID ${existingPerson.id} har uppdaterats.');
+      printError('Ingen person hittades med personnummer $ssn.');
     }
+    setMainPage();
   }
 
-  // Ta bort en person
-  void _deletePersonOperation() {
-    print('Ange ID för den person du vill ta bort:');
-    int? personId = int.tryParse(stdin.readLineSync() ?? '');
+  // Delete a person
+  Future<void> _deletePersonOperation() async {
+    print('\n--- Ta bort person ---');
+    final ssn = _promptInput('Fyll i personnummer för att ta bort:');
+    if (ssn == null) return;
 
-    if (personId == null || personId == 0) {
-      print('Ogiltigt ID.');
-      return;
-    }
-
-    // Hämta och ta bort personen baserat på ID
-    Person? personToDelete = personBox.get(personId);
-
-    if (personToDelete == null) {
-      print('Person med ID $personId finns inte.');
-    } else {
-      // Ta bort från databasen
-      personBox.remove(personId);
-      print('Person med ID $personId har tagits bort.');
-    }
+    await personRepository.deletePerson(ssn);
+    print('Person med personnummer $ssn har tagits bort.');
+    setMainPage();
   }
 
-  // Hantera ogiltiga val
-  void _showInvalidChoice() {
-    print('Ogiltigt val, vänligen försök igen.');
+  // Helper for user input prompt
+  String? _promptInput(String promptText) {
+    stdout.write(promptText);
+    return stdin.readLineSync()?.trim();
+  }
+
+  // Helper for error messages
+  void printError(String message) {
+    print('Fel: $message');
   }
 }

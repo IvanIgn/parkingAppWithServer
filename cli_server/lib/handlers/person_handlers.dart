@@ -10,9 +10,9 @@ const _jsonHeaders = {
 final personRepo = PersonRepository.instance;
 
 Future<Response> getAllPersonsHandler(Request request) async {
-  final persons = await personRepo.getAllPersons();
+  final persons = await personRepo.getAll();
   return Response.ok(
-    jsonEncode(persons.map((p) => p.toJson()).toList()),
+    jsonEncode(persons?.map((p) => p.toJson()).toList()),
     headers: _jsonHeaders,
   );
 }
@@ -22,7 +22,7 @@ Future<Response> createPersonHandler(Request request) async {
   final payload = await request.readAsString();
   final data = jsonDecode(payload);
   final person = Person.fromJson(data);
-  personRepo.createPerson(person); // await för asynkron operation
+  personRepo.add(person); // await för asynkron operation
   return Response.ok('Person med ID ${person.personNumber} skapad.');
 }
 
@@ -32,7 +32,7 @@ Future<Response> getPersonByIdHandler(Request request, String id) async {
   if (personId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  final person = await personRepo.getByPersonId(personId);
+  final person = await personRepo.getById(personId);
   if (person != null) {
     return Response.ok(jsonEncode(person.toJson()), headers: _jsonHeaders);
   } else {
@@ -49,7 +49,7 @@ Future<Response> updatePersonHandler(Request request, String id) async {
   if (personId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  await personRepo.updatePerson(
+  await personRepo.update(
       personId, updatedPerson); // await för asynkron operation
   return Response.ok('Person med ID $id uppdaterad.');
 }
@@ -60,6 +60,6 @@ Future<Response> deletePersonHandler(Request request, String id) async {
   if (personId == null) {
     return Response.badRequest(body: 'Invalid ID format.');
   }
-  await personRepo.deletePerson(personId); // await för asynkron operation
+  await personRepo.delete(personId); // await för asynkron operation
   return Response.ok('Person med ID $id har tagits bort.');
 }
