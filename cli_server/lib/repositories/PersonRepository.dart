@@ -1,9 +1,7 @@
 import 'package:cli_server/router_config.dart';
-import 'package:cli_shared/cli_shared.dart';
+import 'package:cli_shared/cli_server_stuff.dart';
 
 class PersonRepository {
-  // Инициализируем Box<Person> через конфигурацию сервера
-
   static final PersonRepository instance = PersonRepository._();
   PersonRepository._();
 

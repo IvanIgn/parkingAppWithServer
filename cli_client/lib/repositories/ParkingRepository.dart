@@ -3,13 +3,18 @@ import 'dart:convert';
 import 'package:cli_shared/cli_shared.dart';
 
 class ParkingRepository {
-  final String baseUrl = 'http://localhost:8080'; // Serverns URL
+  //final String baseUrl = 'http://localhost:8080'; // Serverns URL
 
   // Singleton-instans av ParkingRepository
   static final ParkingRepository _instance = ParkingRepository._internal();
   static ParkingRepository get instance => _instance;
   ParkingRepository._internal();
 
+  String host = 'http://localhost';
+  String port = '8080';
+  String resource = 'parkings';
+
+/*
   // Lägga till en ny parkering via HTTP POST-begäran
   Future<void> addParking(Parking parking) async {
     try {
@@ -111,5 +116,62 @@ class ParkingRepository {
     } catch (e) {
       print('Fel vid borttagning av parkering: $e');
     }
+  }
+  */
+
+  Future<dynamic> addParking(Parking parking) async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response = await http.post(uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(parking));
+
+    return response;
+  }
+
+  Future<dynamic> getAllParkings() async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response =
+        await http.get(uri, headers: {'Content-Type': 'application/json'});
+
+    final json = jsonDecode(response.body);
+
+    return (json as List)
+        .map((parkings) => Parking.fromJson(parkings))
+        .toList();
+  }
+
+  Future<Parking> getParkingById(int id) async {
+    final uri = Uri.parse('$host:$port/$resource/$id');
+
+    final response = await http.get(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final json = jsonDecode(response.body);
+
+    return Parking.fromJson(json);
+  }
+
+  Future<dynamic> updateParkings(Parking parking) async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response = await http.put(uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(parking.toJson()));
+
+    return response;
+  }
+
+  Future<dynamic> deleteParkings(Parking parking) async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response = await http.delete(uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(parking.toJson()));
+
+    return response;
   }
 }

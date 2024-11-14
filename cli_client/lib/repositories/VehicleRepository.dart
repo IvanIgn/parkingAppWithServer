@@ -3,13 +3,18 @@ import 'dart:convert';
 import 'package:cli_shared/cli_shared.dart';
 
 class VehicleRepository {
-  final String baseUrl = 'http://localhost:8080'; // Serverns URL
+  // final String baseUrl = 'http://localhost:8080'; // Serverns URL
 
   // Singleton-instans av VehicleRepository
   static final VehicleRepository _instance = VehicleRepository._internal();
   static VehicleRepository get instance => _instance;
   VehicleRepository._internal();
 
+  String host = 'http://localhost';
+  String port = '8080';
+  String resource = 'vehicles';
+
+/*
   // Lägga till ett nytt fordon via HTTP POST-begäran
   Future<void> addVehicle(Vehicle vehicle) async {
     try {
@@ -112,5 +117,60 @@ class VehicleRepository {
     } catch (e) {
       print('Fel vid borttagning av fordon: $e');
     }
+  }
+  */
+
+  Future<dynamic> addVehicle(Vehicle vehicle) async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response = await http.post(uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(vehicle.toJson()));
+
+    return response;
+  }
+
+  Future<dynamic> getAllVehicles() async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response =
+        await http.get(uri, headers: {'Content-Type': 'application/json'});
+
+    final json = jsonDecode(response.body);
+
+    return (json as List).map((vehicle) => Vehicle.fromJson(vehicle)).toList();
+  }
+
+  Future<Vehicle> getVehicleById(int id) async {
+    final uri = Uri.parse('$host:$port/$resource/$id');
+
+    final response = await http.get(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final json = jsonDecode(response.body);
+
+    return Vehicle.fromJson(json);
+  }
+
+  Future<dynamic> updateVehicles(Vehicle vehicle) async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response = await http.put(uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(vehicle.toJson()));
+
+    return response;
+  }
+
+  Future<dynamic> deleteVehicle(Vehicle vehicle) async {
+    final uri = Uri.parse('$host:$port/$resource');
+
+    final response = await http.delete(uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(vehicle.toJson()));
+
+    return response;
   }
 }

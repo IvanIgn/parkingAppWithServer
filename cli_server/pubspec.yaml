@@ -1,4 +1,3 @@
-
 name: cli_server
 description: A server app using the shelf package and Docker.
 version: 1.0.0

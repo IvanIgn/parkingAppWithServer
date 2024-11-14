@@ -3,13 +3,13 @@ import 'package:cli_server/handlers/parking_handlers.dart';
 import 'package:cli_server/handlers/parkingSpace_handlers.dart';
 import 'package:cli_server/handlers/vehicle_handlers.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:cli_shared/cli_shared.dart';
+import 'package:cli_shared/cli_server_stuff.dart';
 
 class ServerConfig {
   // singleton constructor
 
   ServerConfig._privateConstructor() {
-    initialize();
+    initializer();
   }
 
   static final ServerConfig _instance = ServerConfig._privateConstructor();
@@ -20,7 +20,7 @@ class ServerConfig {
 
   late Router router;
 
-  initialize() {
+  initializer() {
     // Configure routes.
     router = Router();
 

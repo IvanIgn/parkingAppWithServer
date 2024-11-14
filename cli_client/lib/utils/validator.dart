@@ -8,8 +8,21 @@ class Validator {
     return n != null;
   }
 
+  // Validate single string input
+  static bool validateStringInput(String? input, String errorMessage) {
+    if (!Validator.isString(input) || input == null || input.isEmpty) {
+      printError(errorMessage);
+      return false;
+    }
+    return true;
+  }
+
   static bool isString(String? value) {
-    return value != null && value.isNotEmpty;
+    return value != null;
+  }
+
+  static printError(String message) {
+    print('Fel: $message');
   }
 
   static bool isIndex(String? value, Iterable list) {

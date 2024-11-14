@@ -1,25 +1,25 @@
 import 'dart:io';
-import 'package:shelf/shelf_io.dart' as io;
-import 'package:shelf/shelf.dart';
 import 'package:cli_server/router_config.dart';
+import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 void main(List<String> args) async {
+  // Use any available host or container IP (usually `0.0.0.0`).
   final ip = InternetAddress.anyIPv4;
 
-  // Skapa en router
   Router router = ServerConfig.instance.router;
 
-  // Kombinera router med middleware
+  // Configure a pipeline that logs requests.
   final handler =
-      const Pipeline().addMiddleware(logRequests()).addHandler(router.call);
+      Pipeline().addMiddleware(logRequests()).addHandler(router.call);
+
+  // For running in containers, we respect the PORT environment variable.
   final port = int.parse(Platform.environment['PORT'] ?? '8080');
+  final server = await serve(handler, ip, port);
+  print('Server listening on port ${server.port}');
 
-  // Start the HTTP server after configuring the routes
-  final server = await io.serve(handler, ip, port); // Servern startas här
-  print('Servern körs på http://${server.address.host}:${server.port}');
-
-  // Stäng
+  // sigint handler
 
   ProcessSignal.sigint.watch().listen((ProcessSignal signal) {
     print('clean shutdown');
@@ -27,8 +27,10 @@ void main(List<String> args) async {
     ServerConfig.instance.store.close();
     exit(0);
   });
-  //await server.first;
 }
+
+
+
 
 //final ip = InternetAddress.anyIPv4;
 //final port = 8080;

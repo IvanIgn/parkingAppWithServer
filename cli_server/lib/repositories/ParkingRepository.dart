@@ -3,7 +3,7 @@
 //import 'package:cli_server/router_config.dart';
 
 import 'package:cli_server/router_config.dart';
-import 'package:cli_shared/cli_shared.dart';
+import 'package:cli_shared/cli_server_stuff.dart';
 //import 'package:cli_shared/cli_shared.dart' as shared;
 
 class ParkingRepository {

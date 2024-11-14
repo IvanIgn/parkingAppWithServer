@@ -17,7 +17,7 @@ class SetMainPage {
     'Välj ett alternativ (1-5): ',
   ];
 
-  void setMainPage({bool clearCLI = false}) {
+  Future<void> setMainPage({bool clearCLI = false}) async {
     if (clearCLI) clearConsole();
     stdout.writeAll(firstPageTexts);
     final input = stdin.readLineSync();
@@ -35,16 +35,16 @@ class SetMainPage {
 
     switch (option) {
       case 1:
-        _runSubMenu(PersonsOperations());
+        await _runSubMenu(PersonsOperations());
         break;
       case 2:
-        _runSubMenu(VehiclesOperations());
+        await _runSubMenu(VehiclesOperations());
         break;
       case 3:
-        _runSubMenu(ParkingSpaceOperations());
+        await _runSubMenu(ParkingSpaceOperations());
         break;
       case 4:
-        _runSubMenu(ParkingsOperations());
+        await _runSubMenu(ParkingsOperations());
         break;
       case 5:
         print('Du valde att avsluta');
@@ -54,7 +54,7 @@ class SetMainPage {
     }
   }
 
-  void _runSubMenu(dynamic operation) {
+  Future<void> _runSubMenu(dynamic operation) async {
     clearConsole();
     stdout.writeAll(operation.menuTexts);
     final subInput = stdin.readLineSync();
@@ -70,6 +70,7 @@ class SetMainPage {
       return;
     }
 
-    operation.runOperation(chosenOption);
+    // Await the operation run if it is async
+    await operation.runOperation(chosenOption);
   }
 }
