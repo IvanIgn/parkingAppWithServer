@@ -64,14 +64,14 @@ class ParkingsOperations extends SetMainPage {
           setMainPage();
           return;
         }
-      } while (regNumInput == null || regNumInput.trim().isEmpty);
+      } while (regNumInput.trim().isEmpty);
 
       final vehicleList = await vehicleRepository.getAllVehicles();
 
       final foundRegIndex =
           vehicleList.indexWhere((i) => i.regNumber == regNumInput);
 
-      late final vehicleToAdd;
+      late final Vehicle vehicleToAdd;
       if (foundRegIndex != -1) {
         vehicleToAdd = vehicleList
             .firstWhere((vehicle) => vehicle.regNumber == regNumInput);
@@ -91,16 +91,14 @@ class ParkingsOperations extends SetMainPage {
           setMainPage();
           return;
         }
-      } while (parkSpaceIdInput == null || regNumInput.trim().isEmpty);
+      } while (regNumInput.trim().isEmpty);
 
       final parkSpaceList = await parkingSpaceRepository.getAllParkingSpaces();
 
-      final foundSpaceIndex =
-          parkSpaceList.indexWhere((i) => i.id == parkSpaceIdInput);
-
-      late final spaceToAdd;
+      late final ParkingSpace spaceToAdd;
       if (foundRegIndex != -1) {
-        spaceToAdd = parkSpaceList.firstWhere((i) => i.id == parkSpaceIdInput);
+        spaceToAdd = parkSpaceList
+            .firstWhere((i) => i.id.toString() == parkSpaceIdInput);
 
         // Steg 1: Skapa nytt fordon
       } else {
@@ -118,7 +116,7 @@ class ParkingsOperations extends SetMainPage {
           setMainPage();
           return;
         }
-      } while (endTimeInput == null || endTimeInput.isEmpty);
+      } while (endTimeInput.isEmpty);
 
       final formattedEndTimeInput =
           DateTime.tryParse(_getCorrectDate(endTimeInput));
@@ -169,7 +167,7 @@ class ParkingsOperations extends SetMainPage {
   }
 
   void _updateParkingOperation() async {
-    print('\nDu har valt att uppdatera en parkering\n');
+    print('\n--- Uppdatera en parkering ---');
 
     // Fetch all parkings
     final parkingList = await parkingRepository.getAllParkings();
@@ -241,14 +239,13 @@ class ParkingsOperations extends SetMainPage {
         updatedParking,
       );
 
-      if (updateResult.id != -1) {
+      if (updateResult?.id != -1) {
         calculateDuration(
           parkingToUpdate.startTime,
           formattedEndTimeInput,
           parkingToUpdate.parkingSpace!.pricePerHour.toDouble(),
         );
-        print(
-            'Parkering uppdaterad. Välj att se alla i menyn för att se parkeringar.');
+        print('Parkering uppdaterad.');
       } else {
         _printError('Något gick fel vid uppdatering av parkeringen.');
       }

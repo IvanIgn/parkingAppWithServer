@@ -69,7 +69,7 @@ class VehiclesOperations extends SetMainPage {
       final foundPersonIndex =
           personList.indexWhere((i) => i.personNumber == personNumberInput);
 
-      late final personToAdd;
+      late final Person personToAdd;
       if (foundPersonIndex != -1) {
         personToAdd = personList
             .firstWhere((person) => person.personNumber == personNumberInput);
@@ -203,19 +203,23 @@ class VehiclesOperations extends SetMainPage {
 
       final updatedRegNumber =
           (newRegNumber == null || newRegNumber.trim().isEmpty)
-              ? vehicleToUpdate.regNumber
+              ? vehicleToUpdate!.regNumber
               : newRegNumber.trim().toUpperCase();
 
       // Step 5: Update the vehicle
-      await _vehicleRepository.updateVehicle(
-        vehicleToUpdate.id,
-        Vehicle(
-          id: vehicleToUpdate.id,
-          regNumber: updatedRegNumber,
-          vehicleType: vehicleToUpdate.vehicleType,
-          owner: vehicleToUpdate.owner,
-        ),
-      );
+      if (vehicleToUpdate != null) {
+        await _vehicleRepository.updateVehicle(
+          vehicleToUpdate.id,
+          Vehicle(
+            id: vehicleToUpdate.id,
+            regNumber: updatedRegNumber,
+            vehicleType: vehicleToUpdate.vehicleType,
+            owner: vehicleToUpdate.owner,
+          ),
+        );
+      } else {
+        _printError('Fordonet kunde inte hittas.');
+      }
 
       // If the update completes successfully, notify the user
       print(
