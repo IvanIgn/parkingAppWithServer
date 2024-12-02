@@ -42,6 +42,7 @@ class Validator {
   }
 
   static bool isValidRegistrationNumber(String value) {
+    //ABC123
     // Add your validation logic here
 
     final regExp = RegExp(r'^[A-Z]{3}\d{3}$');
@@ -53,5 +54,15 @@ class Validator {
     final number = int.tryParse(input);
 
     return number != null;
+  }
+
+  static bool isValidAddressAndPrice(
+      String? address, String? pricePerHourInput) {
+    if (!Validator.isString(address) ||
+        !Validator.isNumber(pricePerHourInput)) {
+      Validator.printError('Ogiltig adress eller pris, vänligen försök igen.');
+      return false;
+    }
+    return true;
   }
 }

@@ -7,33 +7,33 @@ class PersonRepository {
 
   final Box<Person> personBox = ServerConfig.instance.store.box<Person>();
 
-  Future<Person?> add(Person item) async {
-    personBox.put(item, mode: PutMode.insert);
+  Future<Person> add(Person person) async {
+    personBox.put(person, mode: PutMode.insert);
 
     // above command did not error
-    return item;
+    return person;
   }
 
   Future<Person?> getById(int id) async {
     return personBox.get(id);
   }
 
-  Future<List<Person>?> getAll() async {
+  Future<List<Person>> getAll() async {
     return personBox.getAll();
   }
 
-  Future<Person?> update(int id, Person item) async {
-    personBox.put(item, mode: PutMode.update);
-    return item;
+  Future<Person> update(int id, Person newPerson) async {
+    personBox.put(newPerson, mode: PutMode.update);
+    return newPerson;
   }
 
   Future<Person?> delete(int id) async {
-    Person? item = personBox.get(id);
+    Person? person = personBox.get(id);
 
-    if (item != null) {
+    if (person != null) {
       personBox.remove(id);
     }
 
-    return item;
+    return person;
   }
 }

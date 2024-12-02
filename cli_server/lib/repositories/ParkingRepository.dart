@@ -13,11 +13,11 @@ class ParkingRepository {
 
   Box<Parking> parkingBox = ServerConfig.instance.store.box<Parking>();
 
-  Future<Parking?> add(Parking item) async {
-    parkingBox.put(item, mode: PutMode.insert);
+  Future<Parking?> add(Parking parking) async {
+    parkingBox.put(parking, mode: PutMode.insert);
 
     // above command did not error
-    return item;
+    return parking;
   }
 
   Future<Parking?> getById(int id) async {
@@ -28,18 +28,18 @@ class ParkingRepository {
     return parkingBox.getAll();
   }
 
-  Future<Parking?> update(int id, Parking item) async {
-    parkingBox.put(item, mode: PutMode.update);
-    return item;
+  Future<Parking> update(int id, Parking newParking) async {
+    parkingBox.put(newParking, mode: PutMode.update);
+    return newParking;
   }
 
   Future<Parking?> delete(int id) async {
-    Parking? item = parkingBox.get(id);
+    Parking? parking = parkingBox.get(id);
 
-    if (item != null) {
+    if (parking != null) {
       parkingBox.remove(id);
     }
 
-    return item;
+    return parking;
   }
 }

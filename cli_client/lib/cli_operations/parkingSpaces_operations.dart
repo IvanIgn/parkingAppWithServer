@@ -4,6 +4,7 @@ import 'package:cli_client/repositories/ParkingSpaceRepository.dart';
 import 'package:cli_shared/cli_shared.dart';
 import 'package:cli_client/utils/validator.dart';
 
+/// Hanterar operationer för parkeringsplatser
 class ParkingSpaceOperations extends SetMainPage {
   final ParkingSpaceRepository parkingSpaceRepository =
       ParkingSpaceRepository.instance;
@@ -18,6 +19,7 @@ class ParkingSpaceOperations extends SetMainPage {
     'Välj ett alternativ (1-5): ',
   ];
 
+  /// Kör vald operation baserat på användarens input
   void runOperation(int chosenOption) {
     try {
       switch (chosenOption) {
@@ -44,133 +46,214 @@ class ParkingSpaceOperations extends SetMainPage {
     }
   }
 
-  // Add new parking space
+  /// Skapa ny parkeringsplats
   Future<void> _addParkingSpaceOperation() async {
     try {
       print('\n--- Skapa ny parkeringsplats ---');
-      final address = _promptInput('Ange adress för parkeringsplatsen:');
-      final pricePerHourInput = _promptInput('Ange pris per timme:');
 
-      if (!_isValidAddressAndPrice(address, pricePerHourInput)) return;
+      // Address input
+      String? address;
+      do {
+        address = _promptInput('Ange adress för parkeringsplatsen:');
+        if (address == null || address.trim().isEmpty) {
+          _printError('Adressen får inte vara tom. Försök igen.');
+        }
+      } while (address == null || address.trim().isEmpty);
 
-      final pricePerHour = double.parse(pricePerHourInput!);
+      // Price per hour input
+      String? pricePerHourInput;
+      double? pricePerHour;
+      do {
+        pricePerHourInput = _promptInput('Ange pris per timme:');
+        if (pricePerHourInput == null ||
+            pricePerHourInput.trim().isEmpty ||
+            double.tryParse(pricePerHourInput) == null ||
+            double.parse(pricePerHourInput) <= 0) {
+          _printError(
+              'Ogiltigt pris. Ange ett positivt numeriskt värde. Försök igen.');
+        } else {
+          pricePerHour = double.parse(pricePerHourInput);
+        }
+      } while (pricePerHourInput == null ||
+          pricePerHourInput.trim().isEmpty ||
+          pricePerHour == null ||
+          pricePerHour <= 0);
+
+      // Create parking space and add to repository
       final parkingSpace = ParkingSpace(
-        address: address!,
+        address: address,
         pricePerHour: pricePerHour.toInt(),
       );
-
-      await parkingSpaceRepository.addParkingSpace(parkingSpace);
-      print('Parkeringsplats på ${parkingSpace.address} har lagts till.');
+      await parkingSpaceRepository.createParkingSpace(parkingSpace);
+      print('Parkeringsplats på "${parkingSpace.address}" har lagts till.');
     } catch (e) {
-      Validator.printError(
-          'Fel vid skapande av parkeringsplats: ${e.toString()}');
+      _printError('Fel vid skapande av parkeringsplats: ${e.toString()}');
     } finally {
       setMainPage();
     }
   }
 
-  // Show all parking spaces
+  /// Visa alla parkeringsplatser
   Future<void> _showAllParkingSpacesOperation() async {
     try {
-      print('\n--- Alla parkeringsplatser ---');
+      print('\n--- Alla parkeringsplatser ---\n');
+
+      // Fetch all parking spaces
       final parkingSpaces = await parkingSpaceRepository.getAllParkingSpaces();
 
+      // Handle case where no parking spaces are found
       if (parkingSpaces.isEmpty) {
         print('Inga parkeringsplatser hittades.');
       } else {
-        for (var i = 0; i < parkingSpaces.length; i++) {
-          final space = parkingSpaces[i];
+        // Iterate through and display each parking space
+        for (var space in parkingSpaces) {
           print(
-              '${i + 1}. Adress: ${space.address}, Pris per timme: ${space.pricePerHour} kr');
+              'ID: ${space.id}, Adress: ${space.address}, Pris per timme: ${space.pricePerHour} kr');
         }
+        print('\n');
       }
     } catch (e) {
-      Validator.printError(
-          'Fel vid visning av parkeringsplatser: ${e.toString()}');
+      // Handle any errors during the operation
+      _printError('Fel vid visning av parkeringsplatser: ${e.toString()}');
     } finally {
-      _waitForUserInput();
+      // Return to main menu
+      setMainPage();
     }
   }
 
-  // Update parking space
+  /// Uppdatera parkeringsplats
   Future<void> _updateParkingSpaceOperation() async {
-    try {
-      print('\n--- Uppdatera parkeringsplats ---');
-      final address = _promptInput(
-          'Ange adressen för den parkeringsplats du vill uppdatera:');
+    print('\n--- Uppdatera en parkeringsplats ---');
 
-      if (!Validator.isString(address)) {
-        Validator.printError('Ogiltig adress.');
+    try {
+      // Step 1: Fetch all parking spaces
+      final parkingSpaceList =
+          await parkingSpaceRepository.getAllParkingSpaces();
+      if (parkingSpaceList.isEmpty) {
+        print('Inga parkeringsplatser hittades för att uppdatera.');
+        setMainPage();
         return;
       }
 
-      final parkingSpace =
-          await parkingSpaceRepository.getParkingSpaceById(int.parse(address!));
+      // Step 2: Prompt for the address of the parking space to update
+      String? address;
+      do {
+        address = _promptInput(
+            'Ange adressen för den parkeringsplats du vill uppdatera:');
+        if (address == null || address.trim().isEmpty) {
+          _printError('Adressen är obligatorisk. Försök igen.');
+        }
+      } while (address == null || address.trim().isEmpty);
 
-      final newAddress =
-          _promptInput('Ny adress (lämna tomt för att behålla aktuell):');
+      // Step 3: Find the parking space by address
+      final foundParkingSpaceIndex =
+          parkingSpaceList.indexWhere((space) => space.address == address);
+
+      if (foundParkingSpaceIndex == -1) {
+        _printError('Ingen parkeringsplats hittades med adressen "$address".');
+        setMainPage();
+        return;
+      }
+
+      final parkingSpaceToUpdate = parkingSpaceList[foundParkingSpaceIndex];
+
+      // Step 4: Prompt for new address and price per hour
+      final newAddress = _promptInput(
+          'Ange ny adress för parkeringsplatsen (lämna tomt för att behålla aktuell):');
       final newPriceInput = _promptInput(
-          'Nytt pris per timme (lämna tomt för att behålla aktuellt):');
+          'Ange nytt pris per timme (lämna tomt för att behålla aktuellt):');
 
-      if (Validator.isString(newAddress) && newAddress!.isNotEmpty) {
-        parkingSpace.address = newAddress;
-      }
-      if (Validator.isNumber(newPriceInput) && newPriceInput!.isNotEmpty) {
-        parkingSpace.pricePerHour = double.parse(newPriceInput).toInt();
-      }
+      // Step 5: Update the address and/or price per hour
+      final updatedAddress = (newAddress == null || newAddress.trim().isEmpty)
+          ? parkingSpaceToUpdate.address
+          : newAddress.trim();
+      final updatedPricePerHour =
+          (newPriceInput == null || newPriceInput.trim().isEmpty)
+              ? parkingSpaceToUpdate.pricePerHour
+              : double.parse(newPriceInput).toInt();
 
-      await parkingSpaceRepository.updateParkingSpace(parkingSpace);
-      print('Parkeringsplatsen har uppdaterats.');
+      // Step 6: Update the parking space in the repository
+      await parkingSpaceRepository.updateParkingSpace(
+        parkingSpaceToUpdate.id,
+        ParkingSpace(
+          id: parkingSpaceToUpdate.id,
+          address: updatedAddress,
+          pricePerHour: updatedPricePerHour,
+        ),
+      );
+
+      // Notify the user
+      print('Parkeringsplatsen med adress "$updatedAddress" har uppdaterats.');
     } catch (e) {
-      Validator.printError(
-          'Fel vid uppdatering av parkeringsplats: ${e.toString()}');
+      _printError(
+          'Ett fel inträffade vid uppdatering av parkeringsplats: ${e.toString()}');
     } finally {
       setMainPage();
     }
   }
 
-  // Delete parking space
   Future<void> _deleteParkingSpaceOperation() async {
+    print('\n--- Ta bort en parkeringsplats ---\n');
+
     try {
-      print('\n--- Ta bort parkeringsplats ---');
-      final address = _promptInput(
-          'Ange adressen för den parkeringsplats du vill ta bort:');
+      // Step 1: Retrieve all parking spaces from the repository
+      final parkingSpaceList =
+          await parkingSpaceRepository.getAllParkingSpaces();
 
-      if (!Validator.validateStringInput(address, 'Ogiltig adress.')) return;
+      if (parkingSpaceList.isEmpty) {
+        print('Inga parkeringsplatser hittades.');
+        setMainPage();
+        return;
+      }
 
-      final parkingSpace =
-          await parkingSpaceRepository.getParkingSpaceById(int.parse(address!));
+      // Step 2: Prompt the user for the ID of the parking space to delete
+      String? idInput;
+      int? parkingSpaceId;
+      do {
+        idInput =
+            _promptInput('Ange ID för den parkeringsplats du vill ta bort:');
+        if (idInput == null ||
+            idInput.isEmpty ||
+            !Validator.isNumber(idInput)) {
+          _printError('Ogiltigt ID. Ange ett positivt heltal.');
+        } else {
+          parkingSpaceId = int.tryParse(idInput);
+        }
+      } while (idInput == null || idInput.isEmpty || parkingSpaceId == null);
 
-      await parkingSpaceRepository.deleteParkingSpace(parkingSpace);
-      print('Parkeringsplatsen på ${parkingSpace.address} har tagits bort.');
+      // Step 3: Find the parking space by ID
+      final parkingSpaceIndex =
+          parkingSpaceList.indexWhere((space) => space.id == parkingSpaceId);
+
+      if (parkingSpaceIndex == -1) {
+        _printError('Ingen parkeringsplats hittades med det angivna ID:et.');
+        setMainPage();
+        return;
+      }
+
+      final parkingSpaceToDelete = parkingSpaceList[parkingSpaceIndex];
+
+      // Step 4: Delete the parking space from the repository
+      await parkingSpaceRepository.deleteParkingSpace(parkingSpaceToDelete.id);
+
+      // Notify the user
+      print(
+          'Parkeringsplatsen med ID ${parkingSpaceToDelete.id} har tagits bort.');
     } catch (e) {
-      Validator.printError(
-          'Fel vid borttagning av parkeringsplats: ${e.toString()}');
+      _printError('Ett oväntat fel inträffade: ${e.toString()}');
     } finally {
       setMainPage();
     }
   }
 
-  // Helper for input prompts
+  /// Hjälpmetod för att hämta inmatning
   String? _promptInput(String promptText) {
     stdout.write(promptText);
     return stdin.readLineSync()?.trim();
   }
 
-  // Wait for user input before returning to main menu
-  void _waitForUserInput() {
-    print('Tryck på valfri tangent för att återgå till huvudmenyn.');
-    stdin.readLineSync();
-    setMainPage(clearCLI: true);
-  }
-
-  // Validate address and price input
-  bool _isValidAddressAndPrice(String? address, String? pricePerHourInput) {
-    if (!Validator.isString(address) ||
-        !Validator.isNumber(pricePerHourInput)) {
-      Validator.printError('Ogiltig adress eller pris, vänligen försök igen.');
-      return false;
-    }
-    return true;
+  /// Hjälpmetod för felutskrift
+  void _printError(String message) {
+    print('Fel: $message');
   }
 }

@@ -2,64 +2,108 @@ import 'dart:convert';
 import 'package:cli_server/repositories/personRepository.dart';
 import 'package:cli_shared/cli_shared.dart';
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
 
-const _jsonHeaders = {
-  'Content-Type': 'application/json',
-};
+final PersonRepository personRepo = PersonRepository.instance;
 
-final personRepo = PersonRepository.instance;
-
+/// GET /persons
 Future<Response> getAllPersonsHandler(Request request) async {
   final persons = await personRepo.getAll();
+  final payload = persons.map((p) => p.toJson()).toList();
+
   return Response.ok(
-    jsonEncode(persons?.map((p) => p.toJson()).toList()),
-    headers: _jsonHeaders,
+    jsonEncode(payload),
+    headers: {'Content-Type': 'application/json'},
   );
 }
 
-// POST /persons
+/// POST /persons
 Future<Response> createPersonHandler(Request request) async {
-  final payload = await request.readAsString();
-  final data = jsonDecode(payload);
-  final person = Person.fromJson(data);
-  personRepo.add(person); // await för asynkron operation
-  return Response.ok('Person med ID ${person.personNumber} skapad.');
-}
+  try {
+    final payload = await request.readAsString();
+    final data = jsonDecode(payload);
+    final person = Person.fromJson(data);
 
-// GET /persons/<id>
-Future<Response> getPersonByIdHandler(Request request, String id) async {
-  final personId = int.tryParse(id);
-  if (personId == null) {
-    return Response.badRequest(body: 'Invalid ID format.');
-  }
-  final person = await personRepo.getById(personId);
-  if (person != null) {
-    return Response.ok(jsonEncode(person.toJson()), headers: _jsonHeaders);
-  } else {
-    return Response.notFound('Person med ID $id hittades inte.');
+    final createdPerson = await personRepo.add(person);
+    return Response.ok(
+      jsonEncode(createdPerson.toJson()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  } catch (e) {
+    return Response.badRequest(body: 'Error: ${e.toString()}');
   }
 }
 
-// PUT /persons/<id>
-Future<Response> updatePersonHandler(Request request, String id) async {
-  final payload = await request.readAsString();
-  final data = jsonDecode(payload);
-  final updatedPerson = Person.fromJson(data);
-  final personId = int.tryParse(id);
-  if (personId == null) {
-    return Response.badRequest(body: 'Invalid ID format.');
+/// GET /persons/<id>
+Future<Response> getPersonByIdHandler(Request request) async {
+  final idStr = request.params["id"];
+
+  if (idStr != null) {
+    final id = int.tryParse(idStr);
+
+    if (id != null) {
+      final person = await personRepo.getById(id);
+      if (person != null) {
+        return Response.ok(
+          jsonEncode(person.toJson()),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } else {
+        return Response.notFound('Person med ID $id hittades inte.');
+      }
+    }
   }
-  await personRepo.update(
-      personId, updatedPerson); // await för asynkron operation
-  return Response.ok('Person med ID $id uppdaterad.');
+
+  return Response.badRequest(body: 'Invalid ID format.');
 }
 
-// DELETE /persons/<id>
-Future<Response> deletePersonHandler(Request request, String id) async {
-  final personId = int.tryParse(id);
-  if (personId == null) {
-    return Response.badRequest(body: 'Invalid ID format.');
+/// PUT /persons/<id>
+Future<Response> updatePersonHandler(Request request) async {
+  final idStr = request.params["id"];
+
+  if (idStr != null) {
+    final id = int.tryParse(idStr);
+
+    if (id != null) {
+      try {
+        final payload = await request.readAsString();
+        final data = jsonDecode(payload);
+        final updatedPerson = Person.fromJson(data);
+
+        final updated = await personRepo.update(id, updatedPerson);
+
+        return Response.ok(
+          jsonEncode(updated.toJson()),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } catch (e) {
+        return Response.badRequest(body: 'Error: ${e.toString()}');
+      }
+    }
   }
-  await personRepo.delete(personId); // await för asynkron operation
-  return Response.ok('Person med ID $id har tagits bort.');
+
+  return Response.badRequest(body: 'Invalid ID format.');
+}
+
+/// DELETE /persons/<id>
+Future<Response> deletePersonHandler(Request request) async {
+  final idStr = request.params["id"];
+
+  if (idStr != null) {
+    final id = int.tryParse(idStr);
+
+    if (id != null) {
+      try {
+        final deletedPerson = await personRepo.delete(id);
+        return Response.ok(
+          jsonEncode(deletedPerson?.toJson()),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } catch (e) {
+        return Response.internalServerError(body: 'Error: ${e.toString()}');
+      }
+    }
+  }
+
+  return Response.badRequest(body: 'Invalid ID format.');
 }

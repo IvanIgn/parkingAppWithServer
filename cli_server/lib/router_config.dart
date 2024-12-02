@@ -26,28 +26,33 @@ class ServerConfig {
 
     store = openStore();
 
+    // Persons routes
     router.get('/persons', getAllPersonsHandler);
     router.get('/persons/<id>', getPersonByIdHandler);
     router.post('/persons', createPersonHandler);
-    router.put('/persons', updatePersonHandler);
-    router.delete('/persons', deletePersonHandler);
+    router.put('/persons/<id>', updatePersonHandler);
+    router.delete('/persons/<id>', deletePersonHandler);
 
+    // Vehicles routes
     router.get('/vehicles', getAllVehiclesHandler);
     router.get('/vehicles/<id>', getVehicleByIdHandler);
     router.post('/vehicles', createVehicleHandler);
-    router.put('/vehicles', updateVehicleHandler);
-    router.delete('/vehicles', deleteVehicleHandler);
+    router.put('/vehicles/<id>', updateVehicleHandler);
+    router.delete('/vehicles/<id>', deleteVehicleHandler);
 
-    router.get('/parkingSpaces', getAllParkingSpacesHandler);
-    router.get('/parkingSpaces/<id>', getParkingSpaceByIdHandler);
-    router.post('/parkingSpaces', createParkingSpaceHandler);
-    router.put('/parkingSpaces', updateParkingSpaceHandler);
-    router.delete('/parkingSpaces', deleteParkingSpaceHandler);
+    // Parking spaces routes
+    router.get('/parkingspaces', getAllParkingSpacesHandler);
+    router.get('/parkingspaces/<id>',
+        getParkingSpaceByIdHandler); // maybe with lower case parkingspaces
+    router.post('/parkingspaces', createParkingSpaceHandler);
+    router.put('/parkingspaces/<id>', updateParkingSpaceHandler);
+    router.delete('/parkingspaces/<id>', deleteParkingSpaceHandler);
 
+    // Parkings routes
     router.get('/parkings', getAllParkingsHandler);
     router.get('/parkings/<id>', getParkingByIdHandler);
     router.post('/parkings', createParkingHandler);
-    router.put('/parkings', updateParkingHandler);
-    router.delete('/parkings', deleteParkingHandler);
+    router.put('/parkings/<id>', updateParkingHandler);
+    router.delete('/parkings/<id>', deleteParkingHandler);
   }
 }

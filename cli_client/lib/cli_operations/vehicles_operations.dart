@@ -45,56 +45,114 @@ class VehiclesOperations extends SetMainPage {
     }
   }
 
-  // Create new vehicle
   Future<void> _addVehicleOperation() async {
-    try {
-      print('\n--- Skapa nytt fordon ---');
-      final regNumber = _promptInput('Ange registreringsnummer:');
-      final vehicleType =
-          _promptInput('Ange fordonstyp (t.ex., bil, motorcykel):');
-      final ownerSSN = _promptInput('Ange ägarens personnummer (valfritt):');
+    print('\n--- Skapa ett nytt fordon ---');
 
-      if (!Validator.isString(regNumber) || !Validator.isString(vehicleType)) {
-        _printError('Ogiltig inmatning, fordonet skapades inte.');
+    try {
+      // Steg 1: Hämta personnummer
+      String? personNumberInput;
+      do {
+        personNumberInput =
+            _promptInput('Ange ägarens personnummer (12 siffror):');
+        if (personNumberInput == null ||
+            !Validator.isValidSocialSecurityNumber(personNumberInput)) {
+          _printError(
+              'Ogiltigt personnummer. Det måste vara 12 siffror. Försök igen.');
+        }
+      } while (personNumberInput == null ||
+          !Validator.isValidSocialSecurityNumber(personNumberInput));
+
+      // Steg 2: Hitta personen baserat på personnummer
+
+      final personList = await _personRepository.getAllPersons();
+
+      final foundPersonIndex =
+          personList.indexWhere((i) => i.personNumber == personNumberInput);
+
+      late final personToAdd;
+      if (foundPersonIndex != -1) {
+        personToAdd = personList
+            .firstWhere((person) => person.personNumber == personNumberInput);
+        // Steg 1: Skapa nytt fordon
+      } else {
+        print('Personen finns inte. Skapa personen först.');
+        setMainPage();
         return;
       }
 
-      Person? owner;
-      if (ownerSSN != null && Validator.isValidSocialSecurityNumber(ownerSSN)) {
-        owner = await _personRepository.getPersonById(int.parse(ownerSSN));
-      }
+      // Steg 2: Hämta registreringsnummer
+      String? regNrInput;
+      do {
+        regNrInput = _promptInput('Ange registreringsnummer (ex. ABC123):');
+        if (regNrInput == null || regNrInput.trim().isEmpty) {
+          _printError('Registreringsnummer är obligatoriskt. Försök igen.');
+        }
+      } while (regNrInput == null || regNrInput.trim().isEmpty);
 
-      final vehicle = Vehicle(
-        regNumber: regNumber!,
-        vehicleType: vehicleType!,
-        owner: owner,
+      // Steg 3: Hämta fordonstyp
+      // Step 3: Get Vehicle Type
+      String? typeInput;
+      do {
+        typeInput =
+            _promptInput('Ange fordonstyp (1: Bil, 2: Motorcykel, 3: Annat):');
+        if (typeInput == null ||
+            !Validator.validateNumber(typeInput) ||
+            int.parse(typeInput) < 1 ||
+            int.parse(typeInput) > 3) {
+          _printError(
+              'Ogiltig inmatning. Ange en siffra (1: Bil, 2: Motorcykel, 3: Annat). Försök igen.');
+        }
+      } while (typeInput == null ||
+          !Validator.validateNumber(typeInput) ||
+          int.parse(typeInput) < 1 ||
+          int.parse(typeInput) > 3);
+
+      // Determine vehicle type
+      final vehicleType = {
+        1: 'Car',
+        2: 'Motorcycle',
+        3: 'Other',
+      }[int.parse(typeInput)]!;
+
+      // Steg 4: Skapa och spara fordonet
+      final newVehicle = Vehicle(
+        regNumber: regNrInput.toUpperCase(),
+        vehicleType: vehicleType,
+        owner: Person(
+          id: personToAdd.id,
+          name: personToAdd.name,
+          personNumber: personToAdd.personNumber,
+        ),
       );
-      await _vehicleRepository.addVehicle(vehicle);
+
+      await _vehicleRepository.createVehicle(newVehicle);
       print(
-          'Fordon med registreringsnummer ${vehicle.regNumber} har lagts till.');
-    } catch (e) {
-      _printError('Fel vid skapande av fordon: ${e.toString()}');
-    } finally {
+          'Fordonet "${newVehicle.vehicleType}" med registreringsnummer "${newVehicle.regNumber}" har lagts till.');
       setMainPage();
+    } catch (e) {
+      _printError(
+          'Ett oväntat fel inträffade vid skapandet av fordon: ${e.toString()}');
     }
   }
 
   // Show all vehicles
   Future<void> _showAllVehiclesOperation() async {
     try {
+      print('\n');
       print('\n--- Alla fordon ---');
+      print('\n');
       final vehicles = await _vehicleRepository.getAllVehicles();
 
       if (vehicles.isEmpty) {
         print('Inga fordon hittades.');
       } else {
-        vehicles.asMap().forEach((index, vehicle) {
+        for (var vehicle in vehicles) {
           final ownerInfo = vehicle.owner != null
               ? 'Ägare: ${vehicle.owner!.name}, Personnummer: ${vehicle.owner!.personNumber}'
               : 'Ingen ägare';
           print(
-              '${index + 1}. Registreringsnummer: ${vehicle.regNumber}, Typ: ${vehicle.vehicleType}, $ownerInfo');
-        });
+              'ID: ${vehicle.id}, Registreringsnummer: ${vehicle.regNumber}, Typ: ${vehicle.vehicleType}, $ownerInfo');
+        }
       }
     } catch (e) {
       _printError('Fel vid visning av fordon: ${e.toString()}');
@@ -103,84 +161,136 @@ class VehiclesOperations extends SetMainPage {
     }
   }
 
-  // Update vehicle
   Future<void> _updateVehicleOperation() async {
-    try {
-      print('\n--- Uppdatera fordon ---');
-      final regNumber = _promptInput(
-          'Ange registreringsnummer för det fordon du vill uppdatera:');
+    print('\n--- Uppdatera ett fordon ---');
 
-      if (!Validator.isString(regNumber)) {
-        _printError('Ogiltig inmatning.');
+    try {
+      // Step 1: Fetch all vehicles
+      final vehicleList = await _vehicleRepository.getAllVehicles();
+      if (vehicleList.isEmpty) {
+        print('Inga fordon hittades för att uppdatera.');
+        setMainPage();
         return;
       }
 
-      final vehicle =
-          await _vehicleRepository.getVehicleById(int.parse(regNumber!));
+      // Step 2: Prompt for the registration number
+      String? regNumber;
+      do {
+        regNumber = _promptInput(
+            'Ange registreringsnummer för det fordon du vill uppdatera (ex. ABC123):');
+        if (regNumber == null || regNumber.trim().isEmpty) {
+          _printError('Registreringsnummer är obligatoriskt. Försök igen.');
+        }
+      } while (regNumber == null || regNumber.trim().isEmpty);
 
+      // Step 3: Find the vehicle
+      final foundVehicleIndex = vehicleList.indexWhere((vehicle) =>
+          vehicle.regNumber.toUpperCase() == regNumber!.toUpperCase());
+
+      if (foundVehicleIndex == -1) {
+        _printError(
+            'Inget fordon hittades med registreringsnummer "$regNumber".');
+        setMainPage();
+        return;
+      }
+
+      final vehicleToUpdate = await _vehicleRepository
+          .getVehicleById(vehicleList[foundVehicleIndex].id);
+
+      // Step 4: Prompt for new registration number
       final newRegNumber = _promptInput(
-          'Nytt registreringsnummer (lämna tomt för att behålla aktuellt):');
-      final newVehicleType =
-          _promptInput('Ny fordonstyp (lämna tomt för att behålla aktuell):');
-      final newOwnerSSN =
-          _promptInput('Ange nytt ägarens personnummer (valfritt):');
+          'Ange nytt registreringsnummer för fordonet (lämna tomt för att behålla aktuellt):');
 
-      if (Validator.isString(newRegNumber) && newRegNumber!.isNotEmpty) {
-        vehicle.regNumber = newRegNumber;
-      }
-      if (Validator.isString(newVehicleType) && newVehicleType!.isNotEmpty) {
-        vehicle.vehicleType = newVehicleType;
-      }
+      final updatedRegNumber =
+          (newRegNumber == null || newRegNumber.trim().isEmpty)
+              ? vehicleToUpdate.regNumber
+              : newRegNumber.trim().toUpperCase();
 
-      if (newOwnerSSN != null &&
-          Validator.isValidSocialSecurityNumber(newOwnerSSN)) {
-        final newOwner =
-            await _personRepository.getPersonById(int.parse(newOwnerSSN));
-        vehicle.owner = newOwner;
-      }
+      // Step 5: Update the vehicle
+      await _vehicleRepository.updateVehicle(
+        vehicleToUpdate.id,
+        Vehicle(
+          id: vehicleToUpdate.id,
+          regNumber: updatedRegNumber,
+          vehicleType: vehicleToUpdate.vehicleType,
+          owner: vehicleToUpdate.owner,
+        ),
+      );
 
-      await _vehicleRepository.updateVehicles(vehicle);
-      print('Fordonet har uppdaterats.');
+      // If the update completes successfully, notify the user
+      print(
+          'Fordon med registreringsnummer "$updatedRegNumber" har uppdaterats framgångsrikt.');
     } catch (e) {
-      _printError('Fel vid uppdatering av fordon: ${e.toString()}');
+      // Catch any error during the update process and print it
+      _printError(
+          'Ett fel inträffade vid uppdatering av fordon: ${e.toString()}');
     } finally {
       setMainPage();
     }
   }
 
-  // Delete vehicle
+  // Delete a vehicle
   Future<void> _deleteVehicleOperation() async {
-    try {
-      print('\n--- Ta bort fordon ---');
-      final regNumber = _promptInput(
-          'Ange registreringsnummer för det fordon du vill ta bort:');
+    print('\n--- Ta bort ett fordon ---\n');
 
-      if (!Validator.isString(regNumber)) {
-        _printError('Ogiltig inmatning.');
+    try {
+      // Step 1: Retrieve all vehicles from the repository
+      final vehicleList = await _vehicleRepository.getAllVehicles();
+
+      if (vehicleList.isEmpty) {
+        print('Inga fordon hittades.');
+        setMainPage();
         return;
       }
 
-      final vehicle =
-          await _vehicleRepository.getVehicleById(int.parse(regNumber!));
+      // Step 2: Prompt for a valid registration number
+      String? regNumber;
+      do {
+        regNumber = _promptInput(
+            'Ange registreringsnummer (ex. ABC123) för det fordon du vill ta bort:');
+        if (regNumber == null || regNumber.isEmpty) {
+          _printError('Registreringsnummer krävs. Försök igen');
+          if (regNumber == null || regNumber.isEmpty) {
+            setMainPage();
+            return;
+          }
+        }
+      } while (regNumber.isEmpty);
 
-      await _vehicleRepository.deleteVehicle(vehicle);
-      print(
-          'Fordon med registreringsnummer ${vehicle.regNumber} har tagits bort.');
+      // Step 3: Find the vehicle in the list
+      final vehicleIndex =
+          vehicleList.indexWhere((vehicle) => vehicle.regNumber == regNumber);
+
+      if (vehicleIndex == -1) {
+        _printError(
+            'Inget fordon hittades med registreringsnummer $regNumber.');
+        setMainPage();
+        return;
+      }
+
+      final vehicleToDelete = vehicleList[vehicleIndex];
+
+      // Step 4: Delete the vehicle from the repository
+      await _vehicleRepository.deleteVehicle(vehicleToDelete.id);
+
+      // Step 5: Notify the user
+      print('Fordon med registreringsnummer $regNumber har raderats.');
     } catch (e) {
-      _printError('Fel vid borttagning av fordon: ${e.toString()}');
+      // Handle any errors during the deletion process
+      _printError('Ett oväntat fel inträffade: ${e.toString()}');
     } finally {
       setMainPage();
     }
   }
 
-  // Prompt input helper
-  static String? _promptInput(String promptText) {
+  // Helper for user input
+  String? _promptInput(String promptText) {
     stdout.write(promptText);
     return stdin.readLineSync()?.trim();
   }
 
-  // Error print helper
-  static void _printError(String message) {
+  // Helper for error messages
+  void _printError(String message) {
     print('Fel: $message');
   }
 }

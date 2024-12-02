@@ -12,11 +12,11 @@ class VehicleRepository {
   // Инициализируем Box<Vehicle> через конфигурацию сервера
   final Box<Vehicle> vehicleBox = ServerConfig.instance.store.box<Vehicle>();
 
-  Future<Vehicle?> add(Vehicle item) async {
-    vehicleBox.put(item, mode: PutMode.insert);
+  Future<Vehicle?> add(Vehicle vehicle) async {
+    vehicleBox.put(vehicle, mode: PutMode.insert);
 
     // above command did not error
-    return item;
+    return vehicle;
   }
 
   Future<Vehicle?> getById(int id) async {
@@ -27,18 +27,18 @@ class VehicleRepository {
     return vehicleBox.getAll();
   }
 
-  Future<Vehicle?> update(int id, Vehicle item) async {
-    vehicleBox.put(item, mode: PutMode.update);
-    return item;
+  Future<Vehicle> update(int id, Vehicle newVehicle) async {
+    vehicleBox.put(newVehicle, mode: PutMode.update);
+    return newVehicle;
   }
 
   Future<Vehicle?> delete(int id) async {
-    Vehicle? item = vehicleBox.get(id);
+    Vehicle? vehicle = vehicleBox.get(id);
 
-    if (item != null) {
+    if (vehicle != null) {
       vehicleBox.remove(id);
     }
 
-    return item;
+    return vehicle;
   }
 }

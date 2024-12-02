@@ -2,62 +2,109 @@ import 'dart:convert';
 import 'package:cli_server/repositories/parkingRepository.dart';
 import 'package:cli_shared/cli_shared.dart';
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
 
-final parkingRepo = ParkingRepository.instance;
-const _jsonHeaders = {
-  'Content-Type': 'application/json',
-};
+final ParkingRepository parkingRepo = ParkingRepository.instance;
 
+/// GET /parkings
 Future<Response> getAllParkingsHandler(Request request) async {
   final parkings = await parkingRepo.getAll();
+  final payload = parkings?.map((p) => p.toJson()).toList();
+
   return Response.ok(
-    jsonEncode(parkings?.map((p) => p.toJson()).toList()),
-    headers: _jsonHeaders,
+    jsonEncode(payload),
+    headers: {'Content-Type': 'application/json'},
   );
 }
 
-// POST /parkings
+/// POST /parkings
 Future<Response> createParkingHandler(Request request) async {
-  final payload = await request.readAsString();
-  final data = jsonDecode(payload);
-  final parking = Parking.fromJson(data);
-  parkingRepo.add(parking); // await för asynkron operation
-  return Response.ok('Parkering med ID ${parking.id} skapad.');
-}
+  try {
+    final payload = await request.readAsString();
+    final data = jsonDecode(payload);
+    final parking = Parking.fromJson(data);
 
-// GET /parkingspaces/<id>
-Future<Response> getParkingByIdHandler(Request request, String id) async {
-  final parkingId = int.tryParse(id);
-  if (parkingId == null) {
-    return Response.badRequest(body: 'Invalid ID format.');
-  }
-  final parking = await parkingRepo.getById(parkingId);
-  if (parking != null) {
-    return Response.ok(jsonEncode(parking.toJson()), headers: _jsonHeaders);
-  } else {
-    return Response.notFound('Parkering med ID $id hittades inte.');
+    final createdParking = await parkingRepo.add(parking);
+
+    return Response.ok(
+      jsonEncode(createdParking?.toJson()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  } catch (e) {
+    return Response.badRequest(body: 'Error: ${e.toString()}');
   }
 }
 
-// PUT /parkings/<id>
-Future<Response> updateParkingHandler(Request request, String id) async {
-  final payload = await request.readAsString();
-  final data = jsonDecode(payload);
-  final updatedParking = Parking.fromJson(data);
-  final parkingId = int.tryParse(id);
-  if (parkingId == null) {
-    return Response.badRequest(body: 'Invalid ID format.');
+/// GET /parkings/<id>
+Future<Response> getParkingByIdHandler(Request request) async {
+  final idStr = request.params["id"];
+
+  if (idStr != null) {
+    final id = int.tryParse(idStr);
+
+    if (id != null) {
+      final parking = await parkingRepo.getById(id);
+      if (parking != null) {
+        return Response.ok(
+          jsonEncode(parking.toJson()),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } else {
+        return Response.notFound('Parkering med ID $id hittades inte.');
+      }
+    }
   }
-  parkingRepo.update(parkingId, updatedParking); // await added
-  return Response.ok('Parkering med ID $id uppdaterad.');
+
+  return Response.badRequest(body: 'Invalid ID format.');
 }
 
-// DELETE /parkings/<id>
-Future<Response> deleteParkingHandler(Request request, String id) async {
-  final parkingId = int.tryParse(id);
-  if (parkingId == null) {
-    return Response.badRequest(body: 'Invalid ID format.');
+/// PUT /parkings/<id>
+Future<Response> updateParkingHandler(Request request) async {
+  final idStr = request.params["id"];
+
+  if (idStr != null) {
+    final id = int.tryParse(idStr);
+
+    if (id != null) {
+      try {
+        final payload = await request.readAsString();
+        final data = jsonDecode(payload);
+        final updatedParking = Parking.fromJson(data);
+
+        final updated = await parkingRepo.update(id, updatedParking);
+
+        return Response.ok(
+          jsonEncode(updated.toJson()),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } catch (e) {
+        return Response.badRequest(body: 'Error: ${e.toString()}');
+      }
+    }
   }
-  parkingRepo.delete(parkingId); // await added
-  return Response.ok('Parkering med ID $id har tagits bort.');
+
+  return Response.badRequest(body: 'Invalid ID format.');
+}
+
+/// DELETE /parkings/<id>
+Future<Response> deleteParkingHandler(Request request) async {
+  final idStr = request.params["id"];
+
+  if (idStr != null) {
+    final id = int.tryParse(idStr);
+
+    if (id != null) {
+      try {
+        final deletedParking = await parkingRepo.delete(id);
+        return Response.ok(
+          jsonEncode(deletedParking?.toJson()),
+          headers: {'Content-Type': 'application/json'},
+        );
+      } catch (e) {
+        return Response.internalServerError(body: 'Error: ${e.toString()}');
+      }
+    }
+  }
+
+  return Response.badRequest(body: 'Invalid ID format.');
 }
