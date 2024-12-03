@@ -203,27 +203,23 @@ class VehiclesOperations extends SetMainPage {
 
       final updatedRegNumber =
           (newRegNumber == null || newRegNumber.trim().isEmpty)
-              ? vehicleToUpdate!.regNumber
+              ? vehicleToUpdate.regNumber
               : newRegNumber.trim().toUpperCase();
 
       // Step 5: Update the vehicle
-      if (vehicleToUpdate != null) {
-        await _vehicleRepository.updateVehicle(
-          vehicleToUpdate.id,
-          Vehicle(
-            id: vehicleToUpdate.id,
-            regNumber: updatedRegNumber,
-            vehicleType: vehicleToUpdate.vehicleType,
-            owner: vehicleToUpdate.owner,
-          ),
-        );
-      } else {
-        _printError('Fordonet kunde inte hittas.');
-      }
+      await _vehicleRepository.updateVehicle(
+        vehicleToUpdate.id,
+        Vehicle(
+          id: vehicleToUpdate.id,
+          regNumber: updatedRegNumber,
+          vehicleType: vehicleToUpdate.vehicleType,
+          owner: vehicleToUpdate.owner,
+        ),
+      );
 
       // If the update completes successfully, notify the user
       print(
-          'Fordon med registreringsnummer "$updatedRegNumber" har uppdaterats framgångsrikt.');
+          'Fordon med registreringsnummer "$updatedRegNumber" har uppdaterats.');
     } catch (e) {
       // Catch any error during the update process and print it
       _printError(

@@ -239,7 +239,7 @@ class ParkingsOperations extends SetMainPage {
         updatedParking,
       );
 
-      if (updateResult?.id != -1) {
+      if (updateResult.id != -1) {
         calculateDuration(
           parkingToUpdate.startTime,
           formattedEndTimeInput,
